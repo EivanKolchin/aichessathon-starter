@@ -107,14 +107,12 @@ function updateSetup() {
   $("start").disabled = !catalog || playing();
   updateCompleteTest();
 }
-// Nothing here knows what can be played until a machine says so, and there are two reasons
-// it might not have: nobody is signed in, or nobody is running one.
-const waitingFor = () => signedIn ? "No runner is online" : "Sign in to the ladder";
+// Nothing here knows what can be played until a machine says so, and with the ladder open
+// there is only one reason it has not: nobody is running one.
+const waitingFor = () => "No runner is online";
 function renderOpponents() {
   if (!catalog) {
-    $("opponents").innerHTML = signedIn
-      ? '<p class="sidebar-empty">No runner is online. Start one with <code>python -m chesslab runner</code> and the engines it can play appear here.</p>'
-      : '<p class="sidebar-empty">Sign in to the ladder and the engines a runner can play appear here.</p>';
+    $("opponents").innerHTML = '<p class="sidebar-empty">No runner is online. Start one with <code>python -m chesslab runner --url ' + location.origin + '</code> and the engines it can play appear here.</p>';
     $("candidate").innerHTML = `<option value="">${waitingFor()}</option>`;
     updateSetup();
     return;
