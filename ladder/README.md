@@ -55,6 +55,12 @@ npm install
 npx wrangler login
 ```
 
+The Worker's config lives at **`wrangler.toml` in the repository root**, not here. Cloudflare's
+build runs `npx wrangler deploy` from the root, so that is where the config has to be for a push
+to deploy; keeping a second copy in this directory would only let the two drift apart. The
+`npm run` scripts below pass `--config ../wrangler.toml` for you, so working from `ladder/`
+still behaves the way you would expect.
+
 Create the two stores. The first command prints a `database_id`; paste it into
 `wrangler.toml` over `PASTE_DATABASE_ID_FROM_WRANGLER_D1_CREATE`.
 
@@ -63,18 +69,21 @@ npx wrangler d1 create chess-ladder
 npx wrangler r2 bucket create chess-ladder-agents
 ```
 
+The `database_id` it prints goes into the root `wrangler.toml`.
+
 Create the tables, set the shared token, and deploy. `schema.sql` holds the catalogue and the
 experiment tables; it is safe to re-run, but it only creates - if you change a column later you
 have to `ALTER TABLE` yourself:
 
 ```bash
-npx wrangler d1 execute chess-ladder --remote --file=./schema.sql
-npx wrangler secret put LADDER_TOKEN
-npx wrangler deploy
+npm run schema
+npx wrangler secret put LADDER_TOKEN --config ../wrangler.toml
+npm run deploy
 ```
 
-Before the real deploy, `npx wrangler deploy --dry-run` bundles the Worker and prints the
-bindings it resolved without touching your account. `env.DB`, `env.BUCKET` and `env.ASSETS`
+Before the real deploy, `npm run deploy -- --dry-run` bundles the Worker and prints the
+bindings it resolved without touching your account. From the repository root, plain
+`npx wrangler deploy --dry-run` does the same thing and is exactly what Cloudflare's build runs. `env.DB`, `env.BUCKET` and `env.ASSETS`
 all have to appear in that table; the Worker serves every page through `env.ASSETS`, so a
 missing assets binding is a blank site rather than a build error.
 

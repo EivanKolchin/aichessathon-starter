@@ -1,6 +1,9 @@
-# Deploy with: npx wrangler deploy   (see README.md for the one-time setup)
+# The Worker lives in ladder/. This config sits at the repository root because that is where
+# Cloudflare's build runs `npx wrangler deploy` from; keeping one config avoids the two
+# drifting apart. Locally, `npm run deploy` from ladder/ passes --config for you.
+# See ladder/README.md for the one-time setup.
 name = "chess-ladder"
-main = "src/index.js"
+main = "ladder/src/index.js"
 compatibility_date = "2025-09-01"
 
 # Leave true while you bootstrap with a bearer token. Turn it off once the Worker sits
@@ -8,7 +11,7 @@ compatibility_date = "2025-09-01"
 workers_dev = true
 
 [assets]
-directory = "./public"
+directory = "./ladder/public"
 # src/index.js falls through to env.ASSETS for everything that is not /api/, so the binding
 # has to be declared; without it the Worker throws on the first page request.
 binding = "ASSETS"
