@@ -8,6 +8,7 @@ import chess
 import numpy as np
 
 from a0.evaluation import EvalState, PawnCache
+from a0.search import MATE_BOUND
 from a1.board import (
     BK,
     EP,
@@ -25,8 +26,10 @@ from a1.board import (
     identity,
     insufficient,
     make,
+    make_null,
     perft,
     unmake,
+    unmake_null,
 )
 from a1.evaluation import evaluate
 from a1.search import (
@@ -245,6 +248,79 @@ class CompiledSearchTests(unittest.TestCase):
         result = Search(config).analyse(reference, 30_000, 30_000)
         reference.push(result.move)
         self.assertFalse(reference.is_repetition(3), result.move.uci())
+
+    def test_null_move_pruning_still_finds_forced_mates(self) -> None:
+        """Pruning may not lose a mate the same search finds without it."""
+        for fen, expected in (
+            ("6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1", "a1a8"),
+            ("6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1", "g5f7"),
+            ("7k/8/8/8/8/8/R7/1R5K w - - 0 1", "a2a7"),
+        ):
+            for use_null, use_lmr in ((False, False), (True, False), (True, True)):
+                config = SearchConfig(
+                    max_depth=6, aspiration=False, use_null=use_null, use_lmr=use_lmr
+                )
+                result = Search(config).analyse(chess.Board(fen), 60_000, 60_000)
+                where = (fen, use_null, use_lmr)
+                self.assertEqual(result.move.uci(), expected, where)
+                self.assertGreaterEqual(result.score, MATE_BOUND, where)
+
+    def test_null_move_pruning_does_not_misjudge_zugzwang(self) -> None:
+        """Passing is exactly the wrong idea here, which is what the material guard is for."""
+        for fen in (
+            "8/8/p7/P7/8/8/8/K1k5 w - - 0 1",
+            "8/8/1p6/1P6/8/8/k1K5/8 w - - 0 1",
+        ):
+            answers = set()
+            for use_null, use_lmr in ((False, False), (True, False), (True, True)):
+                config = SearchConfig(
+                    max_depth=8, aspiration=False, use_null=use_null, use_lmr=use_lmr
+                )
+                result = Search(config).analyse(chess.Board(fen), 60_000, 60_000)
+                answers.add((result.move.uci(), result.score))
+            self.assertEqual(len(answers), 1, (fen, answers))
+
+    def test_reductions_are_taken_back_when_a_late_move_beats_alpha(self) -> None:
+        """A reduced move that beats alpha must be re-searched, or its score is unearned.
+
+        Searching every position twice and comparing is not available here: reductions change
+        the answer by design. What has to hold is that the reduced search never reports a score
+        it did not verify at full depth, which shows up as a mate score from a reduced line.
+        """
+        # A mate found at depth 1 leaves nothing to reduce, so only the middlegame position
+        # is expected to search fewer nodes.
+        for fen, fewer in (
+            ("6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1", False),
+            ("r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P1B2/2PBPN2/PP1N1PPP/R2Q1RK1 w - - 0 9", True),
+        ):
+            plain = Search(
+                SearchConfig(max_depth=6, aspiration=False, use_null=False, use_lmr=False)
+            ).analyse(chess.Board(fen), 60_000, 60_000)
+            reduced = Search(
+                SearchConfig(max_depth=6, aspiration=False, use_null=True, use_lmr=True)
+            ).analyse(chess.Board(fen), 60_000, 60_000)
+            # A claimed mate has to be a real one either way round.
+            if reduced.score >= MATE_BOUND:
+                self.assertGreaterEqual(plain.score, MATE_BOUND, fen)
+            self.assertIn(reduced.move, chess.Board(fen).legal_moves, fen)
+            if fewer:
+                self.assertLess(reduced.nodes, plain.nodes, fen)
+
+    def test_null_move_leaves_the_position_exactly_as_it_found_it(self) -> None:
+        """A pass is undone by restoring metadata; placement must be untouched throughout."""
+        reference = chess.Board(
+            "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P1B2/2PBPN2/PP1N1PPP/R2Q1RK1 w - - 0 9"
+        )
+        board, state = from_board(reference)
+        before_board, before_state = board.copy(), state.copy()
+        undo = np.zeros(UNDO_SIZE, dtype=np.int64)
+        make_null(state, undo)
+        self.assertEqual(state[TURN], -before_state[TURN])
+        self.assertEqual(state[EP], -1)
+        np.testing.assert_array_equal(board, before_board)
+        unmake_null(state, undo)
+        np.testing.assert_array_equal(board, before_board)
+        np.testing.assert_array_equal(state, before_state)
 
     def test_mate_underpromotion_and_fifty_move_priority(self) -> None:
         for reference in (

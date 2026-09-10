@@ -27,11 +27,14 @@ from a1.board import (
     encode,
     from_board,
     generate,
+    has_material,
     identity,
     in_check,
     insufficient,
     make,
+    make_null,
     unmake,
+    unmake_null,
 )
 from a1.evaluation import evaluate
 from a1.jit import compiled
@@ -54,6 +57,8 @@ class SearchConfig:
     aspiration: bool = True
     use_hints: bool = True
     use_tt: bool = True
+    use_null: bool = True
+    use_lmr: bool = True
     # Strict conditions a stored bound on the whole path, the way A0 does. Measured over six
     # positions it reused almost nothing - a transposition reached by a different move order
     # never matches a path-summed fingerprint - so it is kept as an ablation rather than the
@@ -267,6 +272,57 @@ def negamax(
                 return value
     if ply == 0:
         hint = control[ROOT_MOVE]
+
+    # Null-move pruning. If passing the move still leaves the opponent unable to reach beta,
+    # the real move almost certainly beats beta too, so the subtree is not worth searching.
+    #
+    # A null position is written into the repetition history like any other, and cannot create
+    # a false repetition: the scan from the child inspects positions an odd number of real
+    # plies away, and no odd number of real moves returns to the same placement. It can still
+    # miss a genuine repetition inside the null subtree, which errs toward not pruning.
+    if (
+        flags[5]
+        and not quiescent
+        and ply > 0
+        and depth >= 3
+        and not checked
+        and beta < MATE_BOUND
+        and has_material(board, state[TURN])
+    ):
+        reduction = 2 + depth // 6
+        make_null(state, undos[ply])
+        identity(board, state, positions[root_index + ply + 1])
+        control[CONTEXT] += mix(positions[root_index + ply + 1])
+        score = -negamax(
+            board,
+            state,
+            depth - 1 - reduction,
+            -beta,
+            -beta + 1,
+            ply + 1,
+            0,
+            root_index,
+            moves,
+            scores,
+            undos,
+            positions,
+            killers,
+            history,
+            hints,
+            control,
+            deadline,
+            flags,
+        )
+        control[CONTEXT] -= mix(positions[root_index + ply + 1])
+        unmake_null(state, undos[ply])
+        if control[STOP]:
+            return 0
+        # A mate found behind a pass is not a mate anyone can force; report the bound instead.
+        if score >= beta:
+            return beta if score >= MATE_BOUND else score
+        # The null search overwrote this ply's move list.
+        count = generate(board, state, moves[ply], undos[ply])
+
     ordered(board, state, moves[ply], scores[ply], count, hint, killers, history, ply)
     original_alpha = alpha
     best, best_move = -INFINITY, 0
@@ -283,11 +339,32 @@ def negamax(
         control[CONTEXT] += mix(positions[root_index + ply + 1])
         child_depth = depth - 1 if depth > 0 else 0
         child_qply = qply + 1 if quiescent else 0
+
+        # Late move reductions. Ordering already put the moves worth searching first, so the
+        # ones left over are searched shallower on the assumption they will not beat alpha.
+        # When one does, it is searched again at full depth, so this costs accuracy only
+        # where the assumption held. Checks, captures, promotions and evasions keep full depth.
+        reduction = 0
+        if (
+            flags[6]
+            and not quiescent
+            and quiet
+            and i >= 3
+            and depth >= 3
+            and not checked
+            and not in_check(board, state)
+        ):
+            reduction = 1 + (depth - 3) // 4 + (i - 3) // 8
+            if reduction > child_depth - 1:
+                reduction = child_depth - 1
+            if reduction < 0:
+                reduction = 0
+
         if flags[1] and not quiescent and i > 0:
             score = -negamax(
                 board,
                 state,
-                child_depth,
+                child_depth - reduction,
                 -alpha - 1,
                 -alpha,
                 ply + 1,
@@ -304,6 +381,28 @@ def negamax(
                 deadline,
                 flags,
             )
+            # A reduced move that beat alpha was not the kind of move the reduction assumed.
+            if not control[STOP] and reduction and score > alpha:
+                score = -negamax(
+                    board,
+                    state,
+                    child_depth,
+                    -alpha - 1,
+                    -alpha,
+                    ply + 1,
+                    child_qply,
+                    root_index,
+                    moves,
+                    scores,
+                    undos,
+                    positions,
+                    killers,
+                    history,
+                    hints,
+                    control,
+                    deadline,
+                    flags,
+                )
             if not control[STOP] and alpha < score < beta:
                 score = -negamax(
                     board,
@@ -394,6 +493,8 @@ class Search:
                 self.config.use_hints,
                 self.config.use_tt,
                 self.config.strict_draw_context,
+                self.config.use_null,
+                self.config.use_lmr,
             ],
             dtype=np.int64,
         )

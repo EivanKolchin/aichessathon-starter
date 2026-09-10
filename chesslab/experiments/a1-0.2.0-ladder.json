@@ -1,0 +1,21 @@
+{
+  "label": "A1 0.2.0 against the Stockfish Elo dial",
+  "candidate": "a1-020",
+  "opponents": [
+    "sf-elo-1320",
+    "sf-elo-1600",
+    "sf-elo-1800",
+    "sf-elo-2000"
+  ],
+  "openings": [
+    "italian",
+    "najdorf",
+    "french",
+    "qgd",
+    "english"
+  ],
+  "base_ms": 120000,
+  "increment_ms": 500,
+  "ply_cap": 600,
+  "seed": 20260910
+}

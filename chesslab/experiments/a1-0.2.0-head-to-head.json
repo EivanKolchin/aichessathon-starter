@@ -1,0 +1,23 @@
+{
+  "label": "A1 0.2.0 (null-move + LMR) vs frozen A0 0.1.2",
+  "candidate": "a1-020",
+  "opponents": [
+    "a0-012"
+  ],
+  "openings": [
+    "italian",
+    "scotch",
+    "najdorf",
+    "dragon",
+    "french",
+    "winawer",
+    "qgd",
+    "slav",
+    "english",
+    "reti"
+  ],
+  "base_ms": 10000,
+  "increment_ms": 100,
+  "ply_cap": 600,
+  "seed": 20260910
+}

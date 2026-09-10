@@ -1,6 +1,12 @@
 # A1 — original compiled-search experiment
 
-Version 0.1.0 is a separately selectable research candidate. The root submission continues
+Version 0.2.0 adds null-move pruning and late move reductions on top of 0.1.0's compiled
+backend and 0.1.x's transposition score bounds. Measured over six positions at a fixed depth
+these cut nodes to 0.08× and gain about 3.3 plies in a 2-second budget; four forced mates and
+two zugzwang positions are unchanged. Whether that wins games is what the paired experiments
+in `chesslab/experiments/a1-0.2.0-*.json` are for.
+
+Version 0.1.0 remains a separately selectable research candidate. The root submission continues
 to use A0 0.1.2 until a later promotion decision.
 
 The 0x88 mailbox, attack detection, legal moves, make/unmake, exact packed repetition identities,

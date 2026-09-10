@@ -138,8 +138,8 @@ engines and other time controls; they set expectations, they do not transfer.
 | # | Work | Expected | Refuted when |
 |---|---|---|---|
 | 1 | ~~**Restore A1's TT score bounds and pawn cache.**~~ **Done and measured — see §4a.** | ~~Removes the ~6× node penalty; ~1–2 ply~~ | **Refuted.** There was no node penalty. Worth 14% of nodes and +0.17 ply |
-| 2 | **Null-move pruning** with verification at low depth and a zugzwang guard | +100–200 Elo when added first ([CPW](https://www.chessprogramming.org/Null_Move_Pruning_Test_Results)) | Tactical suite regresses, or zugzwang endgames lose |
-| 3 | **Late move reductions**, depth/move-count indexed, re-searching on fail-high | ~+100 Elo when first introduced ([LMR](https://en.wikipedia.org/wiki/Late_move_reductions)) | Wins turn into draws through missed tactics at low depth |
+| 2 | ~~**Null-move pruning**~~ **Done — see §4b.** | ~~+100–200 Elo~~ | Held: 0.41× nodes, no tactical or zugzwang regression |
+| 3 | ~~**Late move reductions**~~ **Done — see §4b.** | ~~~+100 Elo~~ | Held: 0.08× nodes with rung 2, +3.3 ply |
 | 4 | **SEE for capture ordering and pruning**, plus delta pruning in quiescence | Cuts quiescence explosion; ordering is what makes 2 and 3 safe | Quiescence node share does not fall, or losing captures are wrongly cut |
 | 5 | **Reverse futility / static null move**, futility at frontier nodes | Tens of Elo each; cheap once 2–4 exist | Horizon losses rise |
 | 6 | **A small NNUE, trained here.** 768→N→1 incremental, int16, evaluated in Numba. Weights must be ours: published nets are prohibited, including fine-tuned or re-exported ones. | The remaining large term once search is selective; Numbfish reaches ~2300 with NNUE + numpy | Cost per node cancels the eval gain, or training data leaks engine labels the rules forbid |
@@ -190,6 +190,63 @@ supported by published results from other engines rather than by anything measur
 they deserve the same treatment: implement, measure against the frozen previous build, and
 publish the number even when it embarrasses the estimate.
 
+## 4b. Rungs 2 and 3, as measured
+
+Both are implemented in `a1/search.py` and shipped as checkpoint **A1 0.2.0**.
+
+Null-move pruning: depth ≥ 3, not in check, not at the root, beta below mate range, and the side
+to move must hold a piece other than pawns and king. Reduction is `2 + depth // 6`. A mate found
+behind a pass is reported as the bound rather than as a mate, because a mate that needs the
+opponent to pass is not forceable.
+
+A null position enters the repetition history like any other and **cannot** create a false
+repetition. The scan from the child inspects positions an odd number of real plies away, and no
+odd number of real moves returns to the same placement. It can still miss a genuine repetition
+inside the null subtree, which errs toward not pruning.
+
+Late move reductions: quiet moves only, from the fourth move on, depth ≥ 3, not in check and not
+giving check. Reduction is `1 + (depth - 3) // 4 + (i - 3) // 8`, and any reduced move that beats
+alpha is re-searched at full depth before its score is used.
+
+Six positions, fixed depth 6, aspiration off:
+
+| Position | Baseline nodes | + null-move | + LMR | Ratio |
+|---|---:|---:|---:|---:|
+| start | 52,326 | 27,367 | 6,496 | 0.12× |
+| italian | 399,437 | 165,642 | 18,126 | 0.05× |
+| closed | 679,021 | 362,435 | 19,050 | 0.03× |
+| kid | 270,078 | 94,150 | 18,811 | 0.07× |
+| open | 670,465 | 127,825 | 36,685 | 0.05× |
+| endgame | 14,772 | 9,429 | 5,908 | 0.40× |
+| **geometric mean** | 1.00× | **0.41×** | **0.08×** | |
+
+What that buys where it counts, in a fixed 2,000 ms budget:
+
+| | Baseline | + null-move | + LMR |
+|---|---:|---:|---:|
+| Mean depth over the six positions | 5.17 | 5.83 | **8.50** |
+
+**+3.3 plies for the same wall clock.** The implied branching factor falls from about 6.7 to
+about 3.6, which is the range §3 identified as the target. Five of six positions choose the same
+move as the unpruned search at depth 6; the italian prefers `b1c3` over `f3g5`, which is what an
+approximate heuristic is expected to do and is why games decide this, not node counts.
+
+Guards, all passing and all now in `chesslab/tests/test_a1.py`:
+
+- Four forced mates — back rank, smothered, ladder, queen — found with the same move and a mate
+  score under all three pruning configurations.
+- Two zugzwang positions where passing is exactly the wrong idea return an identical move and
+  score with and without null-move pruning.
+- A null move restores placement and metadata exactly.
+- A reduced search never reports a mate the unpruned search does not also see.
+
+Seventeen A1 tests pass, including agreement with an independent exhaustive reference and perft
+against python-chess. A two-game smoke against frozen A0 0.1.2 through the unchanged referee
+completed 1 win and 1 draw with no failures.
+
+**Still unmeasured: whether this wins games.** Node counts and depth are not strength. The
+paired experiments below are what decide it, and they need a machine to run on.
+
 ## 5. What to deprioritise, and why
 
 The exploitation roadmap's M3–M4 — trajectory mining, opponent-response models, selective
@@ -223,10 +280,13 @@ also the point at which exploitation becomes the only remaining move.
    later claim is measured against, and nothing else should start before it exists.
 2. ~~Close A1 rung 1~~ **— done, measured and written up in §4a. It did not do what this note
    predicted, and the fixed-node comparison it called for is what showed why.**
-3. **Rung 2, null-move pruning, is now the first unmeasured thing on the list**, followed by
-   rung 3. Each as its own paired test against the frozen previous build, with a tactical suite
-   as a guard. Given how rung 1 went, run the fixed-depth node comparison before the games:
-   it is minutes rather than hours, and it is what catches a false premise.
+3. ~~Rungs 2 and 3~~ **— done and measured in §4b, and packaged as checkpoint `a1-020`.**
+4. **Run the two paired experiments.** `chesslab/experiments/a1-0.2.0-head-to-head.json` is 20
+   games against frozen A0 0.1.2 at 10 s + 100 ms; `a1-0.2.0-ladder.json` is 40 games against
+   the Elo dial at the full 120 s + 0.5 s event clock, which is what establishes `E50`.
+5. **Then rung 4**, SEE ordering and delta pruning in quiescence. Quiescence is still 89–91% of
+   all nodes, so it is where the next large reduction is, and it is what makes the reductions
+   already in place safer rather than riskier.
 
 The existing lab already supports every one of these: frozen builds, colour-swapped pairs,
 paired statistics, fixed-node comparison and replay verification. With step 0 done, no new

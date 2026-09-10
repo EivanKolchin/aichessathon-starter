@@ -148,6 +148,39 @@ def make(board: IntArray, state: IntArray, move: int, undo: IntArray) -> None:
 
 
 @compiled
+def make_null(state: IntArray, undo: IntArray) -> None:
+    """Pass the move. Placement does not change, so only the metadata is saved."""
+    for i in range(META_SIZE):
+        undo[i] = state[i]
+    state[EP] = -1
+    state[HALF] += 1
+    state[FULL] += int(state[TURN] == -1)
+    state[TURN] = -state[TURN]
+
+
+@compiled
+def unmake_null(state: IntArray, undo: IntArray) -> None:
+    for i in range(META_SIZE):
+        state[i] = undo[i]
+
+
+@compiled
+def has_material(board: IntArray, side: int) -> bool:
+    """Whether this side has a piece other than pawns and its king.
+
+    A null move is unsound in zugzwang, and zugzwang needs a side with nothing safe to move.
+    Requiring a real piece is the standard, cheap guard against it.
+    """
+    for square in range(120):
+        if square & 0x88:
+            continue
+        piece = board[square]
+        if piece * side > 0 and abs(piece) != 1 and abs(piece) != 6:
+            return True
+    return False
+
+
+@compiled
 def unmake(board: IntArray, state: IntArray, move: int, undo: IntArray) -> None:
     source, target = move & 127, (move >> 7) & 127
     piece = undo[META_SIZE]
