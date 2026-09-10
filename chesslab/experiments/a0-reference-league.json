@@ -1,0 +1,10 @@
+{
+  "label": "Random reference · same A0 development league",
+  "candidate": "random",
+  "opponents": ["greedy", "minimax", "tactical", "stockfish"],
+  "openings": ["italian", "french", "qgd"],
+  "base_ms": 5000,
+  "increment_ms": 50,
+  "ply_cap": 600,
+  "seed": 20260909
+}

@@ -1,0 +1,10 @@
+{
+  "label": "A0 0.1.1 vs frozen A0 0.1.0",
+  "candidate": "candidate",
+  "opponents": ["a0-001"],
+  "openings": ["italian", "scotch", "najdorf", "dragon", "french", "winawer", "qgd", "slav", "english", "reti"],
+  "base_ms": 5000,
+  "increment_ms": 50,
+  "ply_cap": 600,
+  "seed": 20260910
+}

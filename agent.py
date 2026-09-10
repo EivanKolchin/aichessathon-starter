@@ -1,10 +1,10 @@
 """The submission entrypoint. The platform imports this file and calls get_move."""
 
-import random
+from a0.engine import ChessAgent
 
-import chess
-
-# Import time runs at the game start. 90s to import packages, build tables etc.
+# Original A0 search/evaluation; the permitted chess library supplies legal moves.
+# This instance preserves board history and transposition storage within one game.
+AGENT = ChessAgent()
 
 
 def get_move(fen: str, time_left_ms: int) -> str:
@@ -20,7 +20,4 @@ def get_move(fen: str, time_left_ms: int) -> str:
     print() is safe. Your stdout is redirected away from the protocol stream and kept in a
     log only your team can read, after validation and after every rated game.
     """
-    board = chess.Board(fen)
-
-    # TODO: Replace everything below this and build a winning bot!
-    return random.choice(list(board.legal_moves)).uci()
+    return AGENT.get_move(fen, time_left_ms)

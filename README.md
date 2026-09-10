@@ -14,16 +14,32 @@ make play
 That plays your agent against a baseline over a full 120 s + 0.5 s game and prints the result.
 When you like it, `make zip` and drop `submission.zip` on your dashboard.
 
+## Visual research arena
+
+The local [Chess Lab](chesslab/README.md) adds a live board, replays, diverse opponent pools,
+paired experiments, build snapshots and downloadable results around the existing referee. **Play
+the engine** puts you across the board from any registered build, and **Engine registry → Add an
+agent** registers a new checkpoint without leaving the browser.
+
+```powershell
+.venv\Scripts\python.exe -m chesslab serve
+```
+
+Open http://127.0.0.1:8765. See the lab guide for minimal setup, adding UCI engines and Python
+checkpoints, headless runs and matched comparisons. Research tools do not enter the submission.
+
 ## Writing an agent
 
-`agent.py` is the whole submission. One function:
+`agent.py` is the submission entry point. It now runs the original [A0 engine](a0/README.md),
+whose search and evaluation live in `a0/` and are included by the packager. One function:
 
 ```python
 def get_move(fen: str, time_left_ms: int) -> str:
     return "e2e4"
 ```
 
-The fork ships a legal random-mover, so the loop works before you write anything. Replace the body.
+The starter originally used a random mover. A0 replaces it with iterative deepening search,
+incremental evaluation and time management. Keep the entry-point contract when developing it.
 
 ```
 make play                                          # one game, real time control
@@ -39,9 +55,9 @@ keeps the first 4 KB and the last 4 KB, and so does the harness. Every rated gam
 your dashboard beside the PGN with your output, your init time, your move times and your clock.
 Only your team can read it.
 
-Games replay. The opening and the baseline's seed both come from the game number, so a
-deterministic agent plays the same games every run and a score change is a change you made. The
-random mover it ships with is not, so `make arena` wanders until you replace it.
+The opening and the baseline's seed come from the game number. Fixed-node A0 searches are
+deterministic, but wall-clock searches can finish at different depths as host load varies.
+Use paired games and repeat measurements before attributing a score change to an engine change.
 
 ## The ladder
 
@@ -65,8 +81,8 @@ uv run python -m harness.arena --agent baselines/numba --opponent baselines/mini
   --increment-ms 500
 ```
 
-- `baselines/random` plays a uniformly random legal move. It is what `agent.py` starts as, minus
-  the seed the baselines take from the harness.
+- `baselines/random` plays a uniformly random legal move and uses the harness seed. It preserves
+  the original starter's playing policy as a diagnostic reference.
 - `baselines/greedy` searches one ply on material.
 - `baselines/minimax` searches two plies on material and mobility, with no time management.
 - `baselines/numba` is `minimax` with the evaluation jitted. It is barely stronger, which is
@@ -77,6 +93,8 @@ uv run python -m harness.arena --agent baselines/numba --opponent baselines/mini
 
 ```
 agent.py             your submission
+a0/                  original classical search, incremental evaluation and clock control
+chesslab/            visual arena, opponent registry and reproducible experiment tools
 baselines/           random, greedy, minimax, numba; each is a directory with an agent.py
 harness/runner.py    the process the platform runs your agent in
 harness/referee.py   the clock, legality, draw and cap rules

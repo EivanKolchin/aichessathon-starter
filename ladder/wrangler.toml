@@ -1,0 +1,31 @@
+# Deploy with: npx wrangler deploy   (see README.md for the one-time setup)
+name = "chess-ladder"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# Leave true while you bootstrap with a bearer token. Turn it off once the Worker sits
+# on a custom domain behind Cloudflare Access, so the Access header cannot be spoofed.
+workers_dev = true
+
+[assets]
+directory = "./public"
+
+[vars]
+# Trust Cf-Access-Authenticated-User-Email. Only turn this on once Access fronts every
+# route that reaches this Worker; until then the header is attacker-controlled.
+ACCESS_ENABLED = "false"
+# Comma-separated allowlist. Empty means any identity Access lets through.
+ALLOWED_EMAILS = ""
+# Compressed upload cap. The Worker buffers the zip in memory, so keep well under 100 MB.
+MAX_ZIP_BYTES = "30000000"
+# Mirrors harness/rules.py MAX_UNZIPPED_BYTES.
+MAX_UNZIPPED_BYTES = "50000000"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "chess-ladder"
+database_id = "PASTE_DATABASE_ID_FROM_WRANGLER_D1_CREATE"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "chess-ladder-agents"

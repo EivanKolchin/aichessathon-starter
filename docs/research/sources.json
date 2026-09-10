@@ -1,0 +1,257 @@
+{
+  "accessed": "2026-09-09",
+  "sources": [
+    {
+      "id": 1,
+      "publisher": "AI Chessathon",
+      "title": "Competition documentation",
+      "date": "Live page; accessed 2026-09-09",
+      "url": "https://aichessathon.com/docs",
+      "use": "Operational limits and original-code/model requirements.",
+      "limitations": "Official live documentation. The requested Markdown endpoints failed; use this accessible live page with the versioned framework."
+    },
+    {
+      "id": 2,
+      "publisher": "AI Chessathon",
+      "title": "Rules and code of conduct",
+      "date": "2026-08-31.v3; accessed 2026-09-09",
+      "url": "https://aichessathon.com/terms",
+      "use": "Competition framework and precedence.",
+      "limitations": "Official versioned rules."
+    },
+    {
+      "id": 3,
+      "publisher": "Stockfish project",
+      "title": "Download Stockfish 19",
+      "date": "Live page; accessed 2026-09-09",
+      "url": "https://stockfishchess.org/download/",
+      "use": "Current published benchmark version.",
+      "limitations": "Official download page; exact binary and network hashes still need to be pinned for experiments."
+    },
+    {
+      "id": 4,
+      "publisher": "Stockfish contributors",
+      "title": "Stockfish 19 search.cpp",
+      "date": "sf_19 source; accessed 2026-09-09",
+      "url": "https://github.com/official-stockfish/Stockfish/blob/sf_19/src/search.cpp",
+      "use": "Selective search, null-move verification, reductions and time allocation.",
+      "limitations": "Primary source code; inspected via raw.githubusercontent.com."
+    },
+    {
+      "id": 5,
+      "publisher": "Stockfish NNUE contributors",
+      "title": "NNUE documentation",
+      "date": "Living documentation; accessed 2026-09-09",
+      "url": "https://github.com/official-stockfish/nnue-pytorch/blob/master/docs/nnue.md",
+      "use": "Sparse features, incremental accumulators, quantization and evaluator costs.",
+      "limitations": "Primary engineering documentation; conceptual reference, not a submission-code template."
+    },
+    {
+      "id": 6,
+      "publisher": "Leela Chess Zero project",
+      "title": "Development overview",
+      "date": "Living documentation; accessed 2026-09-09",
+      "url": "https://lczero.org/dev/overview/",
+      "use": "Policy/value MCTS, batching, available search families.",
+      "limitations": "Primary engineering documentation; project code and pretrained networks are not proposed for submission."
+    },
+    {
+      "id": 7,
+      "publisher": "David Silver et al.; Google DeepMind",
+      "title": "AlphaZero: Shedding new light on chess, shogi, and Go",
+      "date": "2018-12-06",
+      "url": "https://deepmind.google/blog/alphazero-shedding-new-light-on-chess-shogi-and-go/",
+      "use": "Historical match evidence and hardware context.",
+      "limitations": "Primary research report accompanying the Science publication; historical opponent, not Stockfish 19."
+    },
+    {
+      "id": 8,
+      "publisher": "Anian Ruoss et al.",
+      "title": "Amortized Planning with Large-Scale Transformers: A Case Study on Chess",
+      "date": "2024; arXiv v2, 2024-10-21",
+      "url": "https://arxiv.org/html/2402.04494v2",
+      "use": "Searchless chess, distillation, datasets, inference and limitations.",
+      "limitations": "Primary paper, including experimental setup and limitations; Lichess human-pool rating is not engine-pool Elo."
+    },
+    {
+      "id": 9,
+      "publisher": "Dongyoon Hwang et al.",
+      "title": "Can Large Language Models Develop Strategic Reasoning? Post-training Insights from Learning Chess",
+      "date": "2025; arXiv v3, 2025-08-27",
+      "url": "https://arxiv.org/html/2507.00726v3",
+      "use": "Limits of evaluated language-model reasoning/post-training.",
+      "limitations": "Primary workshop paper; conclusions limited to evaluated models and training regimes."
+    },
+    {
+      "id": 10,
+      "publisher": "Ivo Danihelka, Arthur Guez, Julian Schrittwieser, David Silver",
+      "title": "Policy improvement by planning with Gumbel",
+      "date": "ICLR 2022",
+      "url": "https://iclr.cc/virtual/2022/spotlight/6419",
+      "use": "Policy improvement with limited simulations; Gumbel AlphaZero.",
+      "limitations": "Official conference abstract; OpenReview direct access encountered verification, so not treated as a full-paper replication review."
+    },
+    {
+      "id": 11,
+      "publisher": "AlphaEvolve team; Google DeepMind",
+      "title": "AlphaEvolve: A Gemini-powered coding agent for designing advanced algorithms",
+      "date": "2025-05-14",
+      "url": "https://deepmind.google/blog/alphaevolve-a-gemini-powered-coding-agent-for-designing-advanced-algorithms/",
+      "use": "LLM-generated programs, evolutionary archive and automated evaluators.",
+      "limitations": "Primary research announcement; no chess superiority result."
+    },
+    {
+      "id": 12,
+      "publisher": "Esteban Real, Alok Aggarwal, Yanping Huang, Quoc V. Le",
+      "title": "Regularized Evolution for Image Classifier Architecture Search",
+      "date": "2018/AAAI 2019; arXiv v7",
+      "url": "https://arxiv.org/abs/1802.01548",
+      "use": "Age-regularized evolution of architectures.",
+      "limitations": "Primary paper; image-classification evidence, transfer to chess is a proposed experiment."
+    },
+    {
+      "id": 13,
+      "publisher": "James Bergstra and Yoshua Bengio",
+      "title": "Random Search for Hyper-Parameter Optimization",
+      "date": "JMLR 2012",
+      "url": "https://jmlr.org/papers/v13/bergstra12a.html",
+      "use": "Random search as the baseline for adaptive optimizers.",
+      "limitations": "Primary paper."
+    },
+    {
+      "id": 14,
+      "publisher": "Stefan Falkner, Aaron Klein, Frank Hutter",
+      "title": "BOHB: Robust and Efficient Hyperparameter Optimization at Scale",
+      "date": "ICML 2018",
+      "url": "https://arxiv.org/abs/1807.01774",
+      "use": "Bayesian model-based search with multiple evaluation budgets.",
+      "limitations": "Primary paper; chess fidelity correlation must be measured."
+    },
+    {
+      "id": 15,
+      "publisher": "Max Jaderberg et al.",
+      "title": "Population Based Training of Neural Networks",
+      "date": "2017; arXiv v2",
+      "url": "https://arxiv.org/abs/1711.09846",
+      "use": "Checkpoint inheritance and online hyperparameter schedules.",
+      "limitations": "Primary paper; not evidence of arbitrary architecture compatibility."
+    },
+    {
+      "id": 16,
+      "publisher": "Jean-Baptiste Mouret and Jeff Clune",
+      "title": "Illuminating search spaces by mapping elites",
+      "date": "2015",
+      "url": "https://arxiv.org/abs/1504.04909",
+      "use": "Maintaining diverse high-performing candidates.",
+      "limitations": "Primary paper; behavioural descriptors for chess are our design choice."
+    },
+    {
+      "id": 17,
+      "publisher": "Stockfish/Fishtest contributors",
+      "title": "Creating a test on Fishtest",
+      "date": "Living documentation; accessed 2026-09-09",
+      "url": "https://official-stockfish.github.io/docs/fishtest-wiki/Creating-my-first-test.html",
+      "use": "SPSA tuning, short/long time-control validation and node-time caveats.",
+      "limitations": "Primary engineering documentation."
+    },
+    {
+      "id": 18,
+      "publisher": "Stockfish/Fishtest contributors",
+      "title": "Statistical Methods and Algorithms in Fishtest",
+      "date": "Living documentation; accessed 2026-09-09",
+      "url": "https://official-stockfish.github.io/docs/fishtest-wiki/Fishtest-Mathematics.html",
+      "use": "Pentanomial results, GSPRT and sequential-test interpretation.",
+      "limitations": "Primary statistical methodology documentation."
+    },
+    {
+      "id": 19,
+      "publisher": "Anonymous authors in retrieved version",
+      "title": "Discovery of Adversarial Endgame Chess Positions",
+      "date": "Undated double-blind review version; indexed as 2025",
+      "url": "https://openreview.net/pdf?id=nIYtXmeY3F",
+      "use": "AdvChess; tablebase-grounded errors and weak transfer across Stockfish budgets.",
+      "limitations": "Provisional evidence from indexed primary-paper text. Direct PDF access was verification-gated; publication outcome, exact version/configuration and complete methods were not verified."
+    },
+    {
+      "id": 20,
+      "publisher": "Tony T. Wang et al.",
+      "title": "Adversarial Policies Beat Superhuman Go AIs",
+      "date": "2022; arXiv v4, 2023-07-13",
+      "url": "https://arxiv.org/abs/2211.00241",
+      "use": "A legal-play adversary can exploit a much stronger Go system.",
+      "limitations": "Primary paper; Go evidence does not establish a chess exploit."
+    },
+    {
+      "id": 21,
+      "publisher": "Alexandre Trudeau and Michael Bowling",
+      "title": "Targeted Search Control in AlphaZero for Effective Policy Improvement",
+      "date": "2023; arXiv v2",
+      "url": "https://arxiv.org/abs/2302.12359",
+      "use": "Self-play from an archive of states.",
+      "limitations": "Primary paper; experiments in Connect Four and 9x9 Go, not a Stockfish match."
+    },
+    {
+      "id": 22,
+      "publisher": "Marc Lanctot, Mark H. M. Winands, Tom Pepels, Nathan R. Sturtevant",
+      "title": "Monte Carlo Tree Search with Heuristic Evaluations using Implicit Minimax Backups",
+      "date": "2014; expanded arXiv v4",
+      "url": "https://arxiv.org/abs/1406.0486",
+      "use": "Separate minimax and Monte Carlo estimates in hybrid search.",
+      "limitations": "Primary paper; demonstrated games differ from chess."
+    },
+    {
+      "id": 23,
+      "publisher": "Carlos Martin and Tuomas Sandholm",
+      "title": "AlphaZeroES: Direct score maximization outperforms planning loss minimization",
+      "date": "2024",
+      "url": "https://arxiv.org/html/2406.08687v1",
+      "use": "Evolution strategies versus planning losses.",
+      "limitations": "Primary paper; experiments are single-agent problems, not chess."
+    },
+    {
+      "id": 24,
+      "publisher": "Marc Lanctot et al.",
+      "title": "A Unified Game-Theoretic Approach to Multiagent Reinforcement Learning",
+      "date": "2017",
+      "url": "https://arxiv.org/abs/1711.00832",
+      "use": "Best responses to policy mixtures and empirical metagames.",
+      "limitations": "Primary paper; league design inspiration, not a demonstrated chess gain."
+    },
+    {
+      "id": 25,
+      "publisher": "Nikolaus Hansen",
+      "title": "The CMA Evolution Strategy: A Tutorial",
+      "date": "2016; living tutorial versions also exist",
+      "url": "https://arxiv.org/abs/1604.00772",
+      "use": "Continuous black-box optimization.",
+      "limitations": "Primary author tutorial; not categorical architecture search."
+    },
+    {
+      "id": 26,
+      "publisher": "Jesse Farebrother et al.",
+      "title": "Stop Regressing: Training Value Functions via Classification for Scalable Deep RL",
+      "date": "2024; arXiv v1 inspected",
+      "url": "https://arxiv.org/html/2403.03950v1",
+      "use": "Categorical value losses, including a searchless chess experiment.",
+      "limitations": "Primary paper; benefits must be checked in our evaluator/search combination."
+    },
+    {
+      "id": 27,
+      "publisher": "Matthew Lai",
+      "title": "Giraffe: Using Deep Reinforcement Learning to Play Chess",
+      "date": "2015",
+      "url": "https://arxiv.org/abs/1509.01549",
+      "use": "Historical learned chess evaluation and search guidance.",
+      "limitations": "Primary thesis/report; historically bounded, not modern Stockfish evidence."
+    },
+    {
+      "id": 28,
+      "publisher": "Google DeepMind contributors",
+      "title": "Mctx: MCTS-in-JAX",
+      "date": "Living repository; accessed 2026-09-09",
+      "url": "https://github.com/google-deepmind/mctx",
+      "use": "Batched accelerator-oriented research search implementations.",
+      "limitations": "Primary software documentation; offline reference only for the constrained deployment track."
+    }
+  ]
+}

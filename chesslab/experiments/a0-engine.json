@@ -1,0 +1,8 @@
+{
+  "id": "candidate",
+  "name": "A0 · working build",
+  "family": "Original A0 alpha-beta",
+  "kind": "python",
+  "path": ".",
+  "description": "Our original classical engine: PVS, incremental evaluation and clock control"
+}

@@ -1,0 +1,467 @@
+{
+  "status": "proposed_not_executed",
+  "research_horizon": "long_term",
+  "created": "2026-09-09",
+  "primary_track": "Original engine within event-like single-core deployment; accelerator track reported separately",
+  "resources": "Training hardware, available people and budget not yet specified",
+  "rules": [
+    "Do not modify harness/",
+    "Keep original submission code and trained model provenance",
+    "No candidate edits to referee, benchmark or acceptance criteria",
+    "Final holdout never used for training or adaptive selection"
+  ],
+  "required_before_running": [
+    "Complete resource and cost pilot",
+    "Pin opponent binary/network/settings",
+    "Declare minimum useful effect and analysis method",
+    "Freeze opening split and seed manifests",
+    "Assign a total trial budget and independent confirmation budget"
+  ],
+  "promotion_protocol": [
+    "Rules/state correctness",
+    "Deployment feasibility and cold start",
+    "Development screening",
+    "Frozen candidate confirmation on fresh openings",
+    "Independent seed or run replication as relevant"
+  ],
+  "important_limit": "Short screens are exploratory; they do not prove small Elo gains. Final sample sizes follow pilot variance and prespecified power.",
+  "experiments": [
+    {
+      "id": "E00",
+      "phase": 0,
+      "title": "Freeze the target and measure experiment costs",
+      "depends_on": [],
+      "hypothesis": "A reproducible benchmark and measured costs are prerequisites for useful optimisation.",
+      "variants": [
+        "Pinned Stockfish 19 reference",
+        "Unmodified starter through the local referee"
+      ],
+      "primary_metric": "Reproducibility and measured seconds/cost per experiment",
+      "diagnostics": [
+        "Cold-start time",
+        "Full-game duration",
+        "CPU affinity and contention",
+        "Available training throughput"
+      ],
+      "accept": "Reference settings, hashes, clocks, openings and resource accounting are complete; repeated deterministic checks agree.",
+      "reject": "Unexplained outcome changes or resource contention remain.",
+      "outputs": [
+        "Completed benchmark manifest",
+        "Pilot cost ledger",
+        "Target-specific evaluation budget"
+      ],
+      "priority": "required"
+    },
+    {
+      "id": "E01",
+      "phase": 1,
+      "title": "Verify an original board/search core",
+      "depends_on": [
+        "E00"
+      ],
+      "hypothesis": "The new core preserves exact legal chess state while enabling faster search.",
+      "variants": [
+        "Original core",
+        "python-chess reference for legality and state"
+      ],
+      "primary_metric": "Differential move/state correctness",
+      "diagnostics": [
+        "Perft totals and divide differences",
+        "Make/unmake invariants",
+        "Hash restoration",
+        "Castling, en passant, promotions, check evasions",
+        "Repetition and rule-counter handling"
+      ],
+      "accept": "No unexplained differential failures across declared suites; cold-start and memory fit deployment.",
+      "reject": "Any known illegal move, inconsistent state, or deadline-unsafe path.",
+      "outputs": [
+        "Correctness fixtures",
+        "Profile",
+        "Original baseline engine"
+      ],
+      "priority": "required"
+    },
+    {
+      "id": "E02",
+      "phase": 1,
+      "title": "Measure the classical baseline and informative opponent ladder",
+      "depends_on": [
+        "E01"
+      ],
+      "hypothesis": "A clean classical engine provides an informative baseline and can generate useful training games.",
+      "variants": [
+        "A0",
+        "Starter baselines",
+        "Fixed Stockfish resource ladder"
+      ],
+      "primary_metric": "Score by opponent under specified clocks",
+      "diagnostics": [
+        "Failure rate",
+        "Clock reserve",
+        "Move latency",
+        "Opening-family performance"
+      ],
+      "accept": "Complete-game results are reproducible and include opponents that discriminate candidate quality.",
+      "reject": "Near-universal wins/losses leave no ranking signal, or operational failures dominate.",
+      "outputs": [
+        "Baseline match matrix",
+        "Pilot paired-score variance",
+        "Failure taxonomy"
+      ],
+      "priority": "required"
+    },
+    {
+      "id": "E03",
+      "phase": 2,
+      "title": "Compare learned evaluator costs and training targets",
+      "depends_on": [
+        "E02"
+      ],
+      "hypothesis": "A compact original evaluator improves whole-engine strength enough to repay its inference cost.",
+      "variants": [
+        "A0 hand-designed evaluation",
+        "A1 compact incremental network",
+        "Regression versus categorical/WDL loss with other factors controlled"
+      ],
+      "primary_metric": "A1 versus A0 match score at equal wall time",
+      "diagnostics": [
+        "Held-out loss",
+        "Calibration",
+        "Search speed",
+        "Quantisation/export drift",
+        "Training seeds"
+      ],
+      "accept": "A finalist passes prespecified match confirmation and resource checks; independent training reproduces the direction.",
+      "reject": "Only offline loss improves, or inference cost erases match strength.",
+      "outputs": [
+        "Data split manifest",
+        "Training recipe",
+        "Model and export hashes",
+        "Evaluator ablation"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "E04",
+      "phase": 3,
+      "title": "Test where learned move ordering pays",
+      "depends_on": [
+        "E03"
+      ],
+      "hypothesis": "Selected policy calls reduce wasted search more than they cost.",
+      "variants": [
+        "No policy",
+        "Root-only policy",
+        "Root and selected shallow nodes"
+      ],
+      "primary_metric": "Match score under the same total move budget",
+      "diagnostics": [
+        "Time to stable good move",
+        "Policy ranking",
+        "Calls per move",
+        "Quiet-move tactical misses"
+      ],
+      "accept": "Independent confirmation favours a placement and shows no major tactical regression.",
+      "reject": "Policy accuracy increases while same-clock score regresses.",
+      "outputs": [
+        "Policy placement decision",
+        "Latency/strength curve"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "E05",
+      "phase": 3,
+      "title": "Compare policy/value MCTS and Gumbel allocation",
+      "depends_on": [
+        "E03"
+      ],
+      "hypothesis": "An original policy/value search can compete at a measured CPU or accelerator budget.",
+      "variants": [
+        "A3 PUCT",
+        "A3 Gumbel variant",
+        "A1 or A2 strongest baseline"
+      ],
+      "primary_metric": "Score at matched stated deployment resources",
+      "diagnostics": [
+        "Simulation budget",
+        "Neural batching latency",
+        "Forced-line errors",
+        "Training and inference costs separately"
+      ],
+      "accept": "The branch is competitive on a declared track and its scaling justifies further investment.",
+      "reject": "Apparent gains rely on unreported hardware or disappear at the relevant clock.",
+      "outputs": [
+        "CPU and accelerator results kept separate",
+        "Search allocation ablation"
+      ],
+      "priority": "conditional_on_resources"
+    },
+    {
+      "id": "E06",
+      "phase": 3,
+      "title": "Compare bounded architecture optimisers",
+      "depends_on": [
+        "E03",
+        "E04"
+      ],
+      "hypothesis": "Adaptive search finds better validated architectures per total budget than random search.",
+      "variants": [
+        "Random search",
+        "BOHB-style allocation",
+        "Age-regularised evolution"
+      ],
+      "primary_metric": "Best confirmed score versus cumulative research cost",
+      "diagnostics": [
+        "Ranking correlation across fidelities",
+        "Trial failures",
+        "Multiple optimiser seeds",
+        "Diversity and slow-learner retention"
+      ],
+      "accept": "Independent optimiser runs improve the cost/quality trade-off and their winners retrain successfully.",
+      "reject": "Only the best lucky run improves or low-fidelity selection does not transfer.",
+      "outputs": [
+        "Architecture search space",
+        "Full lineage and cost ledger",
+        "Pareto shortlist"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "E07",
+      "phase": 4,
+      "title": "Tune numeric search and clock parameters",
+      "depends_on": [
+        "E03"
+      ],
+      "hypothesis": "Original search/time constants contain recoverable match strength.",
+      "variants": [
+        "Untuned incumbent",
+        "SPSA",
+        "CMA-ES on a modest continuous subset if warranted"
+      ],
+      "primary_metric": "Independent target-clock match improvement",
+      "diagnostics": [
+        "Parameter sensitivity",
+        "Clock failures",
+        "Opening blocks",
+        "Node-cost changes"
+      ],
+      "accept": "Fresh confirmation supports improvement after tuning is finished.",
+      "reject": "Gains exist only on tuning openings or at a different clock.",
+      "outputs": [
+        "Frozen parameter vector",
+        "Tuning ledger",
+        "Confirmation run"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "E08",
+      "phase": 4,
+      "title": "Compare targeted labelling with uniform additional data",
+      "depends_on": [
+        "E03"
+      ],
+      "hypothesis": "Failure/disagreement-based data acquisition improves strength more per annotation hour.",
+      "variants": [
+        "Uniform legal-game sample",
+        "Failure-focused sample mixed with representative data"
+      ],
+      "primary_metric": "Confirmed strength gain per annotation plus training cost",
+      "diagnostics": [
+        "Coverage",
+        "Calibration by phase",
+        "Teacher disagreement",
+        "Duplicate leakage",
+        "Multiple seeds"
+      ],
+      "accept": "Targeted sampling improves representative full-game performance, not only its selected diagnostics.",
+      "reject": "Diagnostic gains are offset by ordinary-position regressions.",
+      "outputs": [
+        "Acquisition policy",
+        "Label budget comparison",
+        "Failure-category changes"
+      ],
+      "priority": "high"
+    },
+    {
+      "id": "E09",
+      "phase": 4,
+      "title": "Test population training and opponent mixtures",
+      "depends_on": [
+        "E03"
+      ],
+      "hypothesis": "A diverse checkpoint league and adaptive schedules outperform a simple training control.",
+      "variants": [
+        "Fixed schedule with current-self opponent",
+        "Fixed schedule with checkpoint mixture",
+        "PBT with compatible checkpoints if compute permits"
+      ],
+      "primary_metric": "Confirmed score versus total training and self-play cost",
+      "diagnostics": [
+        "Matchup matrix",
+        "Forgetting",
+        "Policy diversity",
+        "Training instability",
+        "Lineage correlation"
+      ],
+      "accept": "The league or PBT improves generalisation and cost-adjusted strength across seeds.",
+      "reject": "Added population overhead produces no confirmed benefit.",
+      "outputs": [
+        "Opponent sampling rule",
+        "Schedule decision",
+        "Checkpoint archive"
+      ],
+      "priority": "conditional_on_resources"
+    },
+    {
+      "id": "E10",
+      "phase": 5,
+      "title": "Learn a small controller for the next unit of computation",
+      "depends_on": [
+        "E04",
+        "E07"
+      ],
+      "hypothesis": "A cheap controller allocates search/verification/stop decisions better than fixed rules.",
+      "variants": [
+        "Fixed-budget incumbent",
+        "Hand-designed controller",
+        "Small learned controller"
+      ],
+      "primary_metric": "Match score including controller overhead",
+      "diagnostics": [
+        "Extra-search decision value",
+        "Invocation cost",
+        "Deadline behaviour",
+        "Calibration under distribution shift"
+      ],
+      "accept": "The learned controller wins at equal total time and remains reliable on unseen families.",
+      "reject": "It predicts uncertainty without improving decisions or spends more time than it saves.",
+      "outputs": [
+        "Controller action/input specification",
+        "Original training data",
+        "Controller ablation"
+      ],
+      "priority": "research"
+    },
+    {
+      "id": "E11",
+      "phase": 5,
+      "title": "Discover and test target-budget Stockfish errors",
+      "depends_on": [
+        "E00",
+        "E08"
+      ],
+      "hypothesis": "Reproducible, legally reachable mistakes exist at the specified reference budget.",
+      "variants": [
+        "Uniform legal trajectories",
+        "Targeted/evolutionary trajectory search"
+      ],
+      "primary_metric": "Verified distinct errors per discovery cost",
+      "diagnostics": [
+        "Exact versus heuristic reference status",
+        "Target version and budget transfer",
+        "Reachability trajectory",
+        "Tablebase semantics"
+      ],
+      "accept": "Errors reproduce at the target budget and remain diverse after deduplication.",
+      "reject": "Only malformed/synthetic histories or much smaller target budgets produce errors.",
+      "outputs": [
+        "Failure archive with provenance",
+        "Budget-transfer matrix"
+      ],
+      "priority": "research"
+    },
+    {
+      "id": "E12",
+      "phase": 5,
+      "title": "Induce discovered weaknesses in complete games",
+      "depends_on": [
+        "E10",
+        "E11"
+      ],
+      "hypothesis": "A restrained opponent-aware policy can improve full-game score by reaching target weaknesses.",
+      "variants": [
+        "Robust incumbent",
+        "Opponent-aware tie-breaking within estimated safe set",
+        "More aggressive policy for explicit risk ablation"
+      ],
+      "primary_metric": "Full-game score against pinned Stockfish on unseen openings",
+      "diagnostics": [
+        "Opportunity reach rate",
+        "Conversion rate",
+        "Losses caused by steering",
+        "Transfer to other settings/opponents"
+      ],
+      "accept": "Independent complete-game confirmation shows a gain without unacceptable general regression.",
+      "reject": "Crafted-position gains do not transfer to games or disappear with modest resource/version changes.",
+      "outputs": [
+        "Specialist policy result",
+        "Reach-versus-exploit analysis"
+      ],
+      "priority": "research"
+    },
+    {
+      "id": "E13",
+      "phase": 4,
+      "title": "Measure LLM program evolution against simpler development",
+      "depends_on": [
+        "E02",
+        "E07"
+      ],
+      "hypothesis": "Coding-agent proposals discover useful algorithmic changes beyond numeric tuning.",
+      "variants": [
+        "Fixed-template/numerical search",
+        "One coding agent",
+        "Structured proposer, implementer and reviewer"
+      ],
+      "primary_metric": "Best independently validated engine per equal total development budget",
+      "diagnostics": [
+        "Inference cost",
+        "Failed changes",
+        "Human intervention",
+        "Evaluation leakage",
+        "Accepted improvements"
+      ],
+      "accept": "Replicated development runs show better final quality or lower cost; evaluator protection remains intact.",
+      "reject": "The agentic process only produces more proposals or selects lucky candidates.",
+      "outputs": [
+        "Research-controller comparison",
+        "Protected evaluation policy",
+        "Candidate provenance"
+      ],
+      "priority": "high_after_evaluator"
+    },
+    {
+      "id": "E14",
+      "phase": 6,
+      "title": "Run the frozen full-strength reference campaign",
+      "depends_on": [
+        "E06",
+        "E07",
+        "E08"
+      ],
+      "hypothesis": "The selected frozen original engine has expected score above 0.5 against the pinned full-strength reference.",
+      "variants": [
+        "One frozen finalist",
+        "Pinned Stockfish 19"
+      ],
+      "primary_metric": "Opening-pair-aware score estimate and prespecified uncertainty test",
+      "diagnostics": [
+        "Complete W/D/L and failures",
+        "Colour/family strata",
+        "Hardware and clock fidelity",
+        "Ponder/tablebase settings"
+      ],
+      "accept": "The prespecified primary test supports positive advantage; no post-selection setting changes; independent replication confirms the result.",
+      "reject": "Evidence is inconclusive, the lower uncertainty bound does not exceed equality, or settings compromise the stated claim.",
+      "outputs": [
+        "Full PGNs and run manifest",
+        "Statistical report",
+        "Independent replication"
+      ],
+      "priority": "final"
+    }
+  ]
+}

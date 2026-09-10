@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Ladder · agents</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand"><span class="brand-mark">♞</span><span>Chess Ladder</span></span>
+  <span class="spacer"></span>
+  <span class="muted small" id="viewer"></span>
+</header>
+
+<main>
+  <section class="panel">
+    <h2>Add an agent</h2>
+    <p class="muted">
+      Drop <code>submission.zip</code>, the folder your <code>agent.py</code> lives in, or the loose
+      files themselves. A folder is zipped here in the browser, in the same shape
+      <code>make zip</code> produces.
+    </p>
+
+    <div id="drop" class="drop">
+      <p class="drop-title">Drop files here</p>
+      <p class="muted small">or</p>
+      <p>
+        <button id="pick-zip" type="button">Choose a zip</button>
+        <button id="pick-folder" type="button" class="secondary">Choose a folder</button>
+      </p>
+      <input id="zip-input" type="file" accept=".zip,application/zip" hidden>
+      <input id="folder-input" type="file" webkitdirectory multiple hidden>
+    </div>
+
+    <div class="fields">
+      <label>Name <input id="name" maxlength="80" placeholder="A0 checkpoint 4" autocomplete="off"></label>
+      <label>Family <input id="family" maxlength="60" placeholder="Original alpha-beta" autocomplete="off"></label>
+      <label class="wide">Notes <input id="notes" maxlength="500" placeholder="What changed since the last upload" autocomplete="off"></label>
+    </div>
+
+    <progress id="bar" max="100" value="0" hidden></progress>
+    <p id="status" class="status" hidden></p>
+    <div id="problems" class="problems" hidden></div>
+    <p><button id="upload" type="button" class="primary" disabled>Upload to the catalogue</button></p>
+
+    <div id="token-row" class="token-row" hidden>
+      <p class="muted small">
+        This deployment is not behind Cloudflare Access yet, so it wants the ladder token.
+        It is kept in this browser only.
+      </p>
+      <label>Ladder token <input id="token" type="password" autocomplete="off"></label>
+      <button id="save-token" type="button">Save</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="agent-head">
+      <h2>Catalogue <span class="muted small" id="count"></span></h2>
+      <label class="check"><input id="show-withdrawn" type="checkbox"> Show withdrawn</label>
+    </div>
+    <p class="muted">
+      Everything here is available to everyone signed in. To play these agents on your own
+      machine, pull them into the lab registry and they appear as opponents:
+    </p>
+    <pre id="pull-command" class="command"></pre>
+    <div id="agents"></div>
+  </section>
+</main>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

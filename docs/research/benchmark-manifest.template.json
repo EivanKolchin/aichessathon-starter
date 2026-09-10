@@ -1,0 +1,76 @@
+{
+  "status": "template_requires_pinning_before_use",
+  "created": "2026-09-09",
+  "reference": {
+    "name": "Stockfish 19",
+    "source": "https://stockfishchess.org/download/",
+    "binary_sha256": null,
+    "network_sha256": null,
+    "source_commit": null,
+    "compiler_and_build": null,
+    "proposed_uci_options": {
+      "Threads": 1,
+      "Hash": null,
+      "MultiPV": 1,
+      "Skill Level": 20,
+      "UCI_LimitStrength": false,
+      "Ponder": false
+    },
+    "tablebase_policy": "Explicit matched policy required; initial no-tablebase comparison and later matched-coverage comparison must be separate"
+  },
+  "candidate": {
+    "source_commit": null,
+    "source_sha256": null,
+    "weights_sha256": null,
+    "training_run_id": null,
+    "training_seed": null,
+    "parameter_config_sha256": null,
+    "originality_record": null
+  },
+  "environment": {
+    "os": null,
+    "cpu_model": null,
+    "cpu_affinity": null,
+    "physical_cores_per_active_agent": 1,
+    "memory_limit_bytes": 2000000000,
+    "network_during_play": false,
+    "gpu_during_play": false,
+    "background_pondering": false,
+    "runtime_versions": null,
+    "measured_cold_start_seconds": null
+  },
+  "match": {
+    "base_ms": 120000,
+    "increment_ms": 500,
+    "opening_manifest_sha256": null,
+    "opening_split": null,
+    "colour_swapped_pairs": true,
+    "seed_manifest_sha256": null,
+    "game_history_policy": "Begin at supplied start position and mirror the pinned referee's exact history and counter semantics.",
+    "adjudication": "Use the pinned referee; no evaluation-based early termination.",
+    "referee_sha256": null,
+    "ply_cap_policy": "Record the pinned referee's exact treatment of initial FEN ply; do not silently change it.",
+    "failure_policy": "Candidate errors count as losses; documented infrastructure failures use symmetric preregistered reruns."
+  },
+  "statistics": {
+    "unit": "opening pair; cluster by opening family when required",
+    "method": null,
+    "minimum_useful_score_edge": null,
+    "alpha": null,
+    "power_target": null,
+    "planned_pair_count": null,
+    "sequential_bounds": null,
+    "final_holdout_access": "Only after candidate and analysis freeze",
+    "replication_plan": null
+  },
+  "costs": {
+    "label_cpu_hours": null,
+    "training_gpu_hours": null,
+    "training_cpu_hours": null,
+    "match_cpu_hours": null,
+    "llm_inference_cost": null,
+    "human_hours": null,
+    "currency": null,
+    "notes": "Record both total resource consumption and elapsed time."
+  }
+}

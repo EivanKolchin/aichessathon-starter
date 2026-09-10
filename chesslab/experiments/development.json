@@ -1,0 +1,10 @@
+{
+  "label": "Development league · eight opponents",
+  "candidate": "candidate",
+  "opponents": ["random", "greedy", "minimax", "positional", "tactical", "solid", "active", "rollout"],
+  "openings": ["italian", "scotch", "najdorf", "dragon", "french", "winawer", "qgd", "slav", "english", "reti"],
+  "base_ms": 10000,
+  "increment_ms": 100,
+  "ply_cap": 600,
+  "seed": 42
+}

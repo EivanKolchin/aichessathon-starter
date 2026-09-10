@@ -1,0 +1,10 @@
+{
+  "id": "checkpoint-a0",
+  "name": "A0 classical checkpoint",
+  "family": "Original alpha-beta",
+  "kind": "python",
+  "path": "checkpoints/a0",
+  "description": "A saved version of our original candidate",
+  "includes": ["weights"],
+  "requires": []
+}

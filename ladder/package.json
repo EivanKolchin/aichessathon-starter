@@ -1,0 +1,14 @@
+{
+  "name": "chess-ladder",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "schema": "wrangler d1 execute chess-ladder --remote --file=./schema.sql",
+    "schema:local": "wrangler d1 execute chess-ladder --local --file=./schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

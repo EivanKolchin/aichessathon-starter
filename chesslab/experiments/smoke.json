@@ -1,0 +1,10 @@
+{
+  "label": "Protocol smoke · four opponent families",
+  "candidate": "candidate",
+  "opponents": ["random", "greedy", "positional", "rollout"],
+  "openings": ["italian", "qgd"],
+  "base_ms": 2000,
+  "increment_ms": 20,
+  "ply_cap": 80,
+  "seed": 42
+}

@@ -1,0 +1,10 @@
+{
+  "label": "A0 0.1.1 diverse opponent check",
+  "candidate": "candidate",
+  "opponents": ["tactical", "positional", "rollout", "stockfish"],
+  "openings": ["italian", "dragon", "qgd"],
+  "base_ms": 5000,
+  "increment_ms": 50,
+  "ply_cap": 600,
+  "seed": 20260910
+}

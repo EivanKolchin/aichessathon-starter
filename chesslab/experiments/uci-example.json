@@ -1,0 +1,11 @@
+{
+  "id": "stockfish-reference",
+  "name": "Stockfish reference",
+  "family": "Stockfish",
+  "kind": "uci",
+  "command": ["C:/engines/stockfish/stockfish.exe"],
+  "description": "Full-strength local reference, one thread, no pondering",
+  "options": {"Threads": 1, "Hash": 64},
+  "assets": [],
+  "max_move_ms": null
+}

@@ -1,0 +1,444 @@
+{
+  "date": "2026-09-10",
+  "engine": "A0 0.1.0",
+  "study": ".chesslab/studies/a0-20260910",
+  "candidate_run": "20260910-105551-0eebea",
+  "reference_run": "20260910-105442-76145a",
+  "limits": {
+    "base_ms": 5000,
+    "increment_ms": 50,
+    "ply_cap": 600,
+    "seed": 20260909
+  },
+  "comparison": {
+    "baseline": "20260910-105442-76145a",
+    "candidate": "20260910-105551-0eebea",
+    "opponents": [
+      {
+        "opponent": "greedy",
+        "matched_pairs": 3,
+        "score_delta": 1.0,
+        "interval": [
+          -0.5682005513993709,
+          1
+        ]
+      },
+      {
+        "opponent": "minimax",
+        "matched_pairs": 3,
+        "score_delta": 1.0,
+        "interval": [
+          -0.5682005513993709,
+          1
+        ]
+      },
+      {
+        "opponent": "stockfish",
+        "matched_pairs": 3,
+        "score_delta": 0.0,
+        "interval": [
+          -1,
+          1
+        ]
+      },
+      {
+        "opponent": "tactical",
+        "matched_pairs": 3,
+        "score_delta": 1.0,
+        "interval": [
+          -0.5682005513993709,
+          1
+        ]
+      }
+    ],
+    "unmatched_baseline_pairs": 0,
+    "unmatched_candidate_pairs": 0,
+    "note": "Exploratory matched score differences; 95% Hoeffding bounds assume independent opening pairs. Do not promote a model from these intervals or repeated peeking."
+  },
+  "candidate_summary": [
+    {
+      "opponent": "minimax",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 6,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 1.0,
+      "interval": [
+        0.21589972430031457,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    },
+    {
+      "opponent": "tactical",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 6,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 1.0,
+      "interval": [
+        0.21589972430031457,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    },
+    {
+      "opponent": "stockfish",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 0,
+      "draws": 0,
+      "losses": 6,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 0.0,
+      "interval": [
+        0,
+        0.7841002756996854
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    },
+    {
+      "opponent": "greedy",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 6,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 1.0,
+      "interval": [
+        0.21589972430031457,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    }
+  ],
+  "reference_summary": [
+    {
+      "opponent": "minimax",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 0,
+      "draws": 0,
+      "losses": 6,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 0.0,
+      "interval": [
+        0,
+        0.7841002756996854
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    },
+    {
+      "opponent": "tactical",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 0,
+      "draws": 0,
+      "losses": 6,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 0.0,
+      "interval": [
+        0,
+        0.7841002756996854
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    },
+    {
+      "opponent": "stockfish",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 0,
+      "draws": 0,
+      "losses": 6,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 0.0,
+      "interval": [
+        0,
+        0.7841002756996854
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    },
+    {
+      "opponent": "greedy",
+      "games": 6,
+      "scheduled": 6,
+      "wins": 0,
+      "draws": 0,
+      "losses": 6,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 3,
+      "score": 0.0,
+      "interval": [
+        0,
+        0.7841002756996854
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 3
+    }
+  ],
+  "candidate_source_files": {
+    "agent.py": "b4db36fbe2f49bb7fa03d9cbe31a7685d08e1cc2054ea8ea1dbcc9903f9a6b12",
+    "a0/__init__.py": "5841abec4afe84b2ebdaaf49283c517f8f7f7a5ef576712b9ceb17ed73dd4452",
+    "a0/engine.py": "39f1dd6f0a862e7145402e09e45ea412881b4b54aebd72212438f35eabe47885",
+    "a0/evaluation.py": "87188241d5d0e8343691081edf391542515f5efd67e356d0942d18c7a086bd7a",
+    "a0/README.md": "8350855dc032dba6df370c9cabcba144e14528754c090ef38f5e55eff4007b76",
+    "a0/search.py": "5a6f002b87c610c82549a89e1789f387a452ff5551aece530c05c3445b17c47f"
+  },
+  "opponent_fingerprints": {
+    "greedy": "a5911aff872a020e2a08531ac69a50d1cadfb41a0258b0c00cb7fbb4bd5c90bb",
+    "minimax": "6182a1f53893291c8598844a26133be32cb7daeb81300371f10861c95005994e",
+    "tactical": "4c4f78b0d53c1876b29dc5cd88bf957b1a2322a2a035dbefc132ed5a7fee3909",
+    "stockfish": "de8ba7626f33ea1cb6f7e0976123f0e267886f776ca37935d3d0800f7eeeb302"
+  },
+  "environment": {
+    "python": "3.12.14 (main, Aug 25 2026, 14:01:42) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "machine": "AMD64",
+    "processor": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+    "logical_cpus": 16,
+    "packages": {
+      "chess": "1.11.2",
+      "numpy": null,
+      "numba": null,
+      "torch": null,
+      "onnxruntime": null
+    },
+    "chess": "1.11.2",
+    "parallel_games": 1,
+    "platform_container": false
+  },
+  "telemetry": {
+    "total_candidate_moves": 627,
+    "retained_records": 598,
+    "completed_depths": {
+      "0": 1,
+      "1": 93,
+      "2": 341,
+      "3": 157,
+      "4": 6
+    },
+    "quiescence_node_fraction": 0.9386738039012924,
+    "median_elapsed_ms": 172.0,
+    "total_retained_tt_hits": 531,
+    "note": "Partial sample: long logs retain only the first and last 4 KB. Emergency moves have no search record."
+  },
+  "fixed_node_profile": {
+    "config": {
+      "max_depth": 48,
+      "max_nodes": 10000,
+      "quiescence": true,
+      "pvs": true,
+      "use_tt": true,
+      "aspiration": true,
+      "table_capacity": 32768
+    },
+    "searches": [
+      {
+        "move": "b2b4",
+        "score": -7,
+        "depth": 3,
+        "nodes": 10000,
+        "qnodes": 9247,
+        "elapsed_ms": 844.0000000409782,
+        "tt_hits": 0,
+        "stopped": true,
+        "pv": [
+          "b2b4",
+          "c5d6",
+          "b4b5"
+        ],
+        "opening": {
+          "id": "italian",
+          "name": "Italian game",
+          "family": "Open games",
+          "split": "dev",
+          "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2P2N2/PP1P1PPP/RNBQK2R w KQkq - 1 5"
+        },
+        "nodes_per_second": 11848.341231652223
+      },
+      {
+        "move": "f1e2",
+        "score": 19,
+        "depth": 3,
+        "nodes": 10000,
+        "qnodes": 9434,
+        "elapsed_ms": 1186.9999999762513,
+        "tt_hits": 0,
+        "stopped": true,
+        "pv": [
+          "f1e2",
+          "c5d4",
+          "c3d4"
+        ],
+        "opening": {
+          "id": "french",
+          "name": "French advance",
+          "family": "French",
+          "split": "dev",
+          "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6"
+        },
+        "nodes_per_second": 8424.599831676558
+      },
+      {
+        "move": "c4d5",
+        "score": 19,
+        "depth": 3,
+        "nodes": 10000,
+        "qnodes": 9052,
+        "elapsed_ms": 1952.999999979511,
+        "tt_hits": 0,
+        "stopped": true,
+        "pv": [
+          "c4d5",
+          "e6d5",
+          "g1f3"
+        ],
+        "opening": {
+          "id": "qgd",
+          "name": "Queen's gambit declined",
+          "family": "Queen's gambit",
+          "split": "dev",
+          "fen": "rnbqk2r/ppp1bppp/4pn2/3p2B1/2PP4/2N5/PP2PPPP/R2QKBNR w KQkq - 4 5"
+        },
+        "nodes_per_second": 5120.32770102658
+      }
+    ],
+    "instrumented": false
+  },
+  "stockfish_losses": [
+    {
+      "id": "g00009",
+      "opening": {
+        "id": "italian",
+        "name": "Italian game",
+        "family": "Open games",
+        "split": "dev",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2P2N2/PP1P1PPP/RNBQK2R w KQkq - 1 5"
+      },
+      "white": "candidate",
+      "black": "stockfish",
+      "result": "black",
+      "termination": "checkmate",
+      "plies": 18
+    },
+    {
+      "id": "g00010",
+      "opening": {
+        "id": "italian",
+        "name": "Italian game",
+        "family": "Open games",
+        "split": "dev",
+        "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/2P2N2/PP1P1PPP/RNBQK2R w KQkq - 1 5"
+      },
+      "white": "stockfish",
+      "black": "candidate",
+      "result": "white",
+      "termination": "checkmate",
+      "plies": 47
+    },
+    {
+      "id": "g00015",
+      "opening": {
+        "id": "french",
+        "name": "French advance",
+        "family": "French",
+        "split": "dev",
+        "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6"
+      },
+      "white": "candidate",
+      "black": "stockfish",
+      "result": "black",
+      "termination": "checkmate",
+      "plies": 46
+    },
+    {
+      "id": "g00016",
+      "opening": {
+        "id": "french",
+        "name": "French advance",
+        "family": "French",
+        "split": "dev",
+        "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6"
+      },
+      "white": "stockfish",
+      "black": "candidate",
+      "result": "white",
+      "termination": "checkmate",
+      "plies": 67
+    },
+    {
+      "id": "g00021",
+      "opening": {
+        "id": "qgd",
+        "name": "Queen's gambit declined",
+        "family": "Queen's gambit",
+        "split": "dev",
+        "fen": "rnbqk2r/ppp1bppp/4pn2/3p2B1/2PP4/2N5/PP2PPPP/R2QKBNR w KQkq - 4 5"
+      },
+      "white": "candidate",
+      "black": "stockfish",
+      "result": "black",
+      "termination": "checkmate",
+      "plies": 48
+    },
+    {
+      "id": "g00022",
+      "opening": {
+        "id": "qgd",
+        "name": "Queen's gambit declined",
+        "family": "Queen's gambit",
+        "split": "dev",
+        "fen": "rnbqk2r/ppp1bppp/4pn2/3p2B1/2PP4/2N5/PP2PPPP/R2QKBNR w KQkq - 4 5"
+      },
+      "white": "stockfish",
+      "black": "candidate",
+      "result": "white",
+      "termination": "checkmate",
+      "plies": 29
+    }
+  ],
+  "limitations": [
+    "Three public development opening pairs per opponent; exploratory only.",
+    "Repeated schedules are not independent evidence.",
+    "Local Windows clocks and host load do not reproduce the competition container.",
+    "No Elo estimate, significance claim or automated promotion."
+  ],
+  "verification": {
+    "workspace_tests_passed": 76,
+    "mypy_source_files": 34,
+    "ruff": "passed",
+    "browser": "Desktop/mobile deep-link, board, replay and console checks passed",
+    "submission_smoke": "Both extracted-archive games passed; refreshed README with identical tested Python",
+    "submission_zip_bytes": 11299,
+    "submission_unzipped_bytes": 33042,
+    "submission_sha256": "19cc65ef85f1efe5337d68575c9a67352492782336b920ccfceaf308e8fdc921",
+    "harness_modified": false
+  }
+}
