@@ -210,6 +210,42 @@ class CompiledSearchTests(unittest.TestCase):
                     self.assertEqual(result.depth, 3)
                     self.assertEqual(result.score, expected, (reference.fen(), pvs))
 
+    def test_transposition_bounds_do_not_change_what_the_search_concludes(self) -> None:
+        """A stored bound is an optimisation. Three storage policies, one answer."""
+        policies = (
+            SearchConfig(use_tt=False),
+            SearchConfig(use_tt=True, strict_draw_context=True),
+            SearchConfig(use_tt=True, strict_draw_context=False),
+        )
+        for fen in (
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
+            "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+            "7k/8/8/3pP3/8/8/8/K7 w - d6 0 2",
+        ):
+            answers = set()
+            for policy in policies:
+                config = SearchConfig(
+                    max_depth=4,
+                    aspiration=False,
+                    use_tt=policy.use_tt,
+                    strict_draw_context=policy.strict_draw_context,
+                )
+                result = Search(config).analyse(chess.Board(fen), 30_000, 30_000)
+                self.assertEqual(result.depth, 4, fen)
+                answers.add((result.move.uci(), result.score))
+            self.assertEqual(len(answers), 1, (fen, answers))
+
+    def test_a_repetition_is_still_a_draw_when_bounds_are_reused(self) -> None:
+        """The pre-probe repetition test is what makes relaxed bound reuse safe; check it."""
+        reference = chess.Board("7k/7r/8/8/8/8/R7/K7 w - - 10 1")
+        for move in ("a2b2", "h7g7", "b2a2", "g7h7"):
+            reference.push_uci(move)
+        config = SearchConfig(max_depth=4, aspiration=False, strict_draw_context=False)
+        result = Search(config).analyse(reference, 30_000, 30_000)
+        reference.push(result.move)
+        self.assertFalse(reference.is_repetition(3), result.move.uci())
+
     def test_mate_underpromotion_and_fifty_move_priority(self) -> None:
         for reference in (
             chess.Board("7k/5Q2/6K1/8/8/8/8/8 w - - 99 1"),

@@ -98,6 +98,7 @@ class UCIAgent(Agent):
                 "id": dict(self.engine.id),
                 "options": options,
                 "max_move_ms": self.spec["max_move_ms"],
+                "max_nodes": self.spec["max_nodes"],
                 "ponder": False,
             }
         except (OSError, TimeoutError, chess.engine.EngineError) as error:
@@ -126,6 +127,9 @@ class UCIAgent(Agent):
             white_inc=self.trace.increment_ms / 1000,
             black_inc=self.trace.increment_ms / 1000,
             time=None if maximum is None else min(maximum, max(1, time_left_ms - 20)) / 1000,
+            # The clock still applies. A node-capped engine that somehow outruns its wall time
+            # is stopped by the watchdog below exactly like any other.
+            nodes=self.spec["max_nodes"],
         )
         self.engine.timeout = max(0.001, time_left_ms / 1000) + 0.5
         expired = threading.Event()

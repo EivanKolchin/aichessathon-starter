@@ -314,6 +314,9 @@ class RegistrationTests(unittest.TestCase):
             {"kind": "uci", "command": ["definitely-not-an-engine-binary"]},
             {"includes": ["../escape"]},
             {"max_move_ms": 0},
+            {"max_nodes": 0},
+            # A node cap is a UCI search limit; a Python agent manages its own.
+            {"max_nodes": 1000},
             {"colour": "white"},
         ]
         for changes in cases:

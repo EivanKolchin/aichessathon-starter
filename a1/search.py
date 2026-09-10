@@ -1,8 +1,10 @@
 """Original compiled iterative deepening, PVS and bounded quiescence.
 
-This first experiment reuses A0's evaluation and search limits. Transposition
-storage supplies move ordering only: no score is reused across draw histories.
-Repetition comparisons use exact packed identities, not hash equality.
+Reuses A0's evaluation and search limits. Transposition storage supplies both move ordering and
+score bounds. A stored bound is only reused when the draw context matches, because whether a
+position is a draw depends on the halfmove clock and on which positions the path has already
+visited; move hints carry no such claim and are shared on position alone. Repetition comparisons
+use exact packed identities, not hash equality.
 """
 
 import time
@@ -35,7 +37,11 @@ from a1.evaluation import evaluate
 from a1.jit import compiled
 
 type FloatArray = NDArray[np.float64]
-NODES, QNODES, STOP, NODE_LIMIT, CLOCK_MASK, ROOT_MOVE = range(6)
+NODES, QNODES, STOP, NODE_LIMIT, CLOCK_MASK, ROOT_MOVE, CONTEXT, TTHITS = range(8)
+# Transposition columns. BOUND is 0 when the slot holds a move hint but no usable score.
+KEY, MOVE, TAG, SCORE, DEPTH, BOUND = range(6)
+LOWER, UPPER, EXACT = 1, 2, 3
+HALF_TAG = 0x9E3779B97F4A7C15
 VALUES = np.array((0, 100, 315, 330, 505, 950, 0), dtype=np.int64)
 
 
@@ -47,6 +53,15 @@ class SearchConfig:
     pvs: bool = True
     aspiration: bool = True
     use_hints: bool = True
+    use_tt: bool = True
+    # Strict conditions a stored bound on the whole path, the way A0 does. Measured over six
+    # positions it reused almost nothing - a transposition reached by a different move order
+    # never matches a path-summed fingerprint - so it is kept as an ablation rather than the
+    # default. Relaxed conditions on the halfmove clock alone and relies on the repetition and
+    # fifty-move tests this node already ran before probing. That is the ordinary engine
+    # approximation to graph history interaction: a bound can still come from a subtree whose
+    # internal repetitions differed from this path's.
+    strict_draw_context: bool = False
 
 
 @compiled
@@ -73,6 +88,50 @@ def repeated(history: IntArray, index: int, halfmove: int) -> bool:
             if count >= 3:
                 return True
     return False
+
+
+@compiled
+def mix(key: IntArray) -> int:
+    """A second, independent fold of the same identity.
+
+    Summed over the path it becomes a draw-context fingerprint. Addition rather than XOR is
+    deliberate: XOR cancels a position that appears twice, which is exactly the repetition the
+    fingerprint has to notice.
+    """
+    result = 0
+    for index in range(6):
+        word = key[index] + HALF_TAG
+        word ^= word >> 30
+        word *= 0xBF58476D1CE4E5B9
+        result += word ^ (word >> 27)
+    return int(result)
+
+
+@compiled
+def context_seed(positions: IntArray, count: int) -> int:
+    """Sum the inherited reversible history, wrapping at 64 bits the way the search does."""
+    total = 0
+    for index in range(count):
+        total += mix(positions[index])
+    return int(total)
+
+
+@compiled
+def pack_mate(score: int, ply: int) -> int:
+    if score >= MATE_BOUND:
+        return score + ply
+    if score <= -MATE_BOUND:
+        return score - ply
+    return score
+
+
+@compiled
+def unpack_mate(score: int, ply: int) -> int:
+    if score >= MATE_BOUND:
+        return score - ply
+    if score <= -MATE_BOUND:
+        return score + ply
+    return score
 
 
 @compiled
@@ -182,12 +241,34 @@ def negamax(
             count = tactical
     key = hint_key(positions[root_index + ply])
     slot = key & (len(hints) - 1)
+    tag = state[HALF] * HALF_TAG
+    if flags[4]:
+        tag += control[CONTEXT]
     hint = 0
-    if not quiescent and flags[2] and hints[slot, 0] == key:
-        hint = hints[slot, 1]
+    if not quiescent and flags[2] and hints[slot, KEY] == key:
+        hint = hints[slot, MOVE]
+        # A bound is only what this position was worth on a path with the same draw prospects,
+        # and never at the root, where the caller still needs the move this node chooses.
+        if (
+            ply > 0
+            and flags[3]
+            and hints[slot, BOUND]
+            and hints[slot, TAG] == tag
+            and hints[slot, DEPTH] >= depth
+        ):
+            value = unpack_mate(hints[slot, SCORE], ply)
+            bound = hints[slot, BOUND]
+            if (
+                bound == EXACT
+                or (bound == LOWER and value >= beta)
+                or (bound == UPPER and value <= alpha)
+            ):
+                control[TTHITS] += 1
+                return value
     if ply == 0:
         hint = control[ROOT_MOVE]
     ordered(board, state, moves[ply], scores[ply], count, hint, killers, history, ply)
+    original_alpha = alpha
     best, best_move = -INFINITY, 0
     for i in range(count):
         move = moves[ply, i]
@@ -199,6 +280,7 @@ def negamax(
         )
         make(board, state, move, undos[ply])
         identity(board, state, positions[root_index + ply + 1])
+        control[CONTEXT] += mix(positions[root_index + ply + 1])
         child_depth = depth - 1 if depth > 0 else 0
         child_qply = qply + 1 if quiescent else 0
         if flags[1] and not quiescent and i > 0:
@@ -265,6 +347,7 @@ def negamax(
                 flags,
             )
         unmake(board, state, move, undos[ply])
+        control[CONTEXT] -= mix(positions[root_index + ply + 1])
         if control[STOP]:
             return 0
         if score > best:
@@ -281,7 +364,13 @@ def negamax(
             break
     if not quiescent and best_move:
         if flags[2]:
-            hints[slot, 0], hints[slot, 1] = key, best_move
+            hints[slot, KEY], hints[slot, MOVE] = key, best_move
+            hints[slot, TAG] = tag
+            hints[slot, SCORE] = pack_mate(best, ply)
+            hints[slot, DEPTH] = depth
+            hints[slot, BOUND] = (
+                UPPER if best <= original_alpha else LOWER if best >= beta else EXACT
+            )
         if ply == 0:
             control[ROOT_MOVE] = best_move
     return alpha if quiescent else best
@@ -297,9 +386,16 @@ class Search:
         self.undos = np.zeros((MAX_PLY, UNDO_SIZE), dtype=np.int64)
         self.killers = np.zeros((MAX_PLY, 2), dtype=np.int64)
         self.history = np.zeros((2, 128, 128), dtype=np.int64)
-        self.hints = np.zeros((32768, 2), dtype=np.int64)
+        self.hints = np.zeros((32768, 6), dtype=np.int64)
         self.flags = np.array(
-            [self.config.quiescence, self.config.pvs, self.config.use_hints], dtype=np.int64
+            [
+                self.config.quiescence,
+                self.config.pvs,
+                self.config.use_hints,
+                self.config.use_tt,
+                self.config.strict_draw_context,
+            ],
+            dtype=np.int64,
         )
 
     def reset(self) -> None:
@@ -330,7 +426,7 @@ class Search:
         self.history //= 2
         key = hint_key(positions[root_index])
         slot = key & (len(self.hints) - 1)
-        hint = int(self.hints[slot, 1]) if self.hints[slot, 0] == key else 0
+        hint = int(self.hints[slot, MOVE]) if self.hints[slot, KEY] == key else 0
         ordered(
             board,
             state,
@@ -343,8 +439,11 @@ class Search:
             0,
         )
         best, score, completed = int(self.moves[0, 0]), evaluate(board, state), 0
+        # The reversible history the search inherits is already part of its draw context.
+        seed = context_seed(positions, root_index + 1)
         control = np.array(
-            [0, 0, 0, self.config.max_nodes, 0 if hard_ms < 20 else 31, best], dtype=np.int64
+            [0, 0, 0, self.config.max_nodes, 0 if hard_ms < 20 else 31, best, seed, 0],
+            dtype=np.int64,
         )
         for depth in range(1, self.config.max_depth + 1):
             now = time.perf_counter()
@@ -396,7 +495,7 @@ class Search:
             int(control[NODES]),
             int(control[QNODES]),
             (time.perf_counter() - started) * 1000,
-            0,
+            int(control[TTHITS]),
             bool(control[STOP]),
             (move.uci(),),
         )

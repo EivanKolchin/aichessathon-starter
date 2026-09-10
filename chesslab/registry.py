@@ -31,6 +31,10 @@ class EngineSpec:
     includes: list[str] = field(default_factory=lambda: ["weights"])
     assets: list[str] = field(default_factory=list)
     max_move_ms: int | None = None
+    # A node cap is how an external engine is weakened without injecting deliberate blunders,
+    # which is a different opponent from one limited by UCI_Elo. It is a search limit rather
+    # than a UCI option, so it cannot be expressed in `options`.
+    max_nodes: int | None = None
 
     def __post_init__(self) -> None:
         if not IDENTIFIER.fullmatch(self.id):
@@ -41,6 +45,10 @@ class EngineSpec:
             raise ValueError("UCI engines need a command array; shell commands are not accepted")
         if self.max_move_ms is not None and self.max_move_ms < 1:
             raise ValueError("max_move_ms must be positive, or null for the full clock")
+        if self.max_nodes is not None and self.max_nodes < 1:
+            raise ValueError("max_nodes must be positive, or null for an unlimited search")
+        if self.max_nodes is not None and self.kind != "uci":
+            raise ValueError("max_nodes applies to UCI engines; Python agents manage their own")
         for name in self.includes:
             if Path(name).is_absolute() or ".." in Path(name).parts:
                 raise ValueError("Included build files must be relative to the engine directory")
