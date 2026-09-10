@@ -23,6 +23,12 @@ binding = "ASSETS"
 ACCESS_ENABLED = "false"
 # Comma-separated allowlist. Empty means any identity Access lets through.
 ALLOWED_EMAILS = ""
+# No sign-in at all: anybody who has the address can queue experiments, play the engine and
+# upload agents. Understand what that means before leaving it on. Queueing an experiment makes
+# code run on whichever machine is offering itself as a runner, and an uploaded agent is Python
+# that that machine will execute. Set this to "false" and deploy to close it again; the bearer
+# token and the Access path both keep working either way.
+PUBLIC = "true"
 # Compressed upload cap. The Worker buffers the zip in memory, so keep well under 100 MB.
 MAX_ZIP_BYTES = "30000000"
 # Mirrors harness/rules.py MAX_UNZIPPED_BYTES.

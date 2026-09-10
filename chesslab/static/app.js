@@ -194,7 +194,10 @@ function renderBoard() {
     $(`${location}-clock`).title = "";
     $(`${location}-dot`).className = `piece-dot ${side}`;
   }
-  $("position-number").textContent = frameIndex ? `Ply ${frameIndex} / ${game.frames.length-1} · ${frame.san}` : "Starting position";
+  // frameIndex outlives the game it was an index into: selecting a run that has no games yet
+  // leaves it pointing at the last one. Without a game there is no ply to name.
+  $("position-number").textContent = game && frameIndex
+    ? `Ply ${frameIndex} / ${game.frames.length-1} · ${frame.san}` : "Starting position";
   $("move-detail").textContent = frameIndex ? `Last move: ${Math.round(frame.elapsed_ms)} ms · recorded clocks` : "Clocks recorded after each move";
   $("follow").classList.toggle("active", following);
   $("follow").setAttribute("aria-pressed", String(following));

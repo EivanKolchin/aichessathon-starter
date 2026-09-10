@@ -7,7 +7,7 @@ let catalog, catalogKey = "", run, game, runId = initialParams.get("run") || "",
 let frameIndex = 0, timer = null, polling = false, historyKey = "", gamesKey = "", moveKey = "";
 let selectionRevision = 0, lastRender = null;
 let play = null, guess = null, selected = "", targets = new Map();
-let signedIn = false, tokenAsked = false;
+let signedIn = true, tokenAsked = false;
 let playTimer = null, playRevision = 0, resultSeen = false, clockTimer = null, clockAnchor = null;
 const HUMAN = "you";
 const files = "abcdefgh";
@@ -27,9 +27,24 @@ const failureNames = new Set(["crash", "illegal", "flag", "init", "both_failed"]
 
 // Two ways in. Behind Cloudflare Access the browser is already identified and nothing extra
 // is sent; until then the Worker wants the ladder token, which stays in this browser only.
-const token = () => localStorage.getItem("ladder-token") || "";
+// Only a failure that came from talking to the ladder is allowed to claim the ladder is
+// unreachable. A bug in this file saying so sent us looking at the network for an hour.
+const ladderFailure = (error) => Object.assign(error, {fromLadder: true});
+const stored = (key) => { try { return localStorage.getItem(key) || ""; } catch { return ""; } };
+const token = () => stored("ladder-token");
+// With no sign-in, two people on the same address would otherwise be one person: the same
+// sparring session, each other's runs. This is the name this browser goes by. It is not a
+// secret and it is not a password - it only keeps one browser's board separate from another's.
+function viewer() {
+  let name = stored("ladder-viewer");
+  if (!name) {
+    name = `viewer-${crypto.randomUUID().slice(0, 8)}`;
+    try { localStorage.setItem("ladder-viewer", name); } catch { /* private window */ }
+  }
+  return name;
+}
 async function api(path, data) {
-  const headers = new Headers();
+  const headers = new Headers({"X-Ladder-Owner": viewer()});
   if (token()) headers.set("Authorization", `Bearer ${token()}`);
   const options = {headers};
   if (data !== undefined) {
@@ -37,13 +52,18 @@ async function api(path, data) {
     headers.set("Content-Type", "application/json");
     options.body = JSON.stringify(data);
   }
-  const response = await fetch(path, options);
+  let response;
+  try {
+    response = await fetch(path, options);
+  } catch (cause) {
+    throw ladderFailure(new Error(`Could not reach the ladder: ${cause.message}`));
+  }
   const result = await response.json().catch(() => ({}));
   if (response.status === 401) askForToken();
   if (!response.ok) {
     const failure = new Error(result.error || `Request failed (${response.status})`);
     failure.status = response.status;
-    throw failure;
+    throw ladderFailure(failure);
   }
   return result;
 }
@@ -246,7 +266,10 @@ function renderBoard() {
     $(`${location}-clock`).title = "";
     $(`${location}-dot`).className = `piece-dot ${side}`;
   }
-  $("position-number").textContent = frameIndex ? `Ply ${frameIndex} / ${game.frames.length-1} · ${frame.san}` : "Starting position";
+  // frameIndex outlives the game it was an index into: selecting a run that has no games yet
+  // leaves it pointing at the last one. Without a game there is no ply to name.
+  $("position-number").textContent = game && frameIndex
+    ? `Ply ${frameIndex} / ${game.frames.length-1} · ${frame.san}` : "Starting position";
   $("move-detail").textContent = frameIndex ? `Last move: ${Math.round(frame.elapsed_ms)} ms · recorded clocks` : "Clocks recorded after each move";
   $("follow").classList.toggle("active", following);
   $("follow").setAttribute("aria-pressed", String(following));
@@ -388,7 +411,12 @@ async function poll() {
     const chosen = live.find((g) => g.id === preferredLive) || live[0];
     if (following && chosen) gameId = chosen.id;
     renderLiveMatches(run);
-    if (!run.games?.length) { game = null; renderRun(); renderGame(); return; }
+    // No game means no ply. Leaving frameIndex pointing into the run you were looking at
+    // before is what made the board reach for frames that were no longer there.
+    if (!run.games?.length) {
+      game = null; frameIndex = 0; lastRender = null; moveKey = "";
+      renderRun(); renderGame(); return;
+    }
     if (!gameId || !run.games.some((g) => g.id === gameId)) gameId = run.games[0].id;
     game = (await api(`/api/runs/${encodeURIComponent(runId)}/games/${encodeURIComponent(gameId)}`)).game;
     if (revision !== selectionRevision) return;
@@ -396,9 +424,12 @@ async function poll() {
     renderRun(); renderGame();
   } catch (error) {
     // A 401 is not a broken ladder, it is one that has not been told who is asking, and the
-    // token row above already says so; a banner underneath it would only repeat that.
-    $("connection").classList.add("offline");
-    $("connection").textContent = error.status === 401 ? "Waiting for the ladder token" : "Cannot reach the ladder";
+    // sign-in dialog already says so; a banner underneath it would only repeat that.
+    if (error.fromLadder) {
+      $("connection").classList.add("offline");
+      $("connection").textContent = error.status === 401
+        ? "Waiting for the ladder token" : "Cannot reach the ladder";
+    }
     if (error.status !== 401) showError(error);
   } finally { polling = false; }
 }
@@ -878,7 +909,7 @@ function bindDrop() {
       form.append("name", $("drop-name").value.trim());
       form.append("family", $("drop-family").value.trim());
       form.append("notes", $("drop-notes").value.trim());
-      const headers = new Headers();
+      const headers = new Headers({"X-Ladder-Owner": viewer()});
       if (token()) headers.set("Authorization", `Bearer ${token()}`);
       const response = await fetch("/api/upload", {method:"POST", headers, body:form});
       const result = await response.json().catch(() => ({}));

@@ -11,7 +11,7 @@
   <header class="topbar">
     <a class="brand" href="/" aria-label="Chess Lab home"><span class="brand-mark" aria-hidden="true">♞</span><span>Chess Lab<span class="brand-tag">Shared</span></span></a>
     <div class="top-note">Catalogue <span>/</span> Arena</div>
-    <button id="connection" class="connection" type="button" title="Sign in to the ladder">Looking for runners…</button>
+    <button id="connection" class="connection" type="button" title="Ladder sign-in">Looking for runners…</button>
     <button class="primary play-cta" id="open-play-top" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a2.6 2.6 0 0 1 1.6 4.7c1 .8 1.7 2 1.9 3.4H8.5c.2-1.4.9-2.6 1.9-3.4A2.6 2.6 0 0 1 12 3Z"/><path d="M6.5 21h11M9.4 12.1c.1 3.2-.6 6.1-1.7 8.9m6.9-8.9c-.1 3.2.6 6.1 1.7 8.9"/></svg><span>Play<span class="label-long"> the engine</span></span></button>
     <button class="quiet open-setup topbar-secondary" type="button" aria-label="New experiment"><span aria-hidden="true">+</span><span class="label-long">New experiment</span></button>
   </header>
@@ -65,7 +65,7 @@
 
 
     <dialog id="token-dialog" class="token-dialog" aria-labelledby="token-title">
-      <div class="dialog-heading"><div><span class="dialog-icon" aria-hidden="true">♞</span><h1 id="token-title">Sign in to the ladder</h1><p class="muted intro">This deployment is not behind Cloudflare Access yet, so it asks for the shared token instead. It is kept in this browser and sent to nothing else.</p></div><button class="close-dialog" data-close="token-dialog" aria-label="Close sign in">×</button></div>
+      <div class="dialog-heading"><div><span class="dialog-icon" aria-hidden="true">♞</span><h1 id="token-title">Sign in to the ladder</h1><p class="muted intro">This deployment is open: nobody needs a token to use it. If it is ever closed again, the shared token goes here, and it is kept in this browser only.</p></div><button class="close-dialog" data-close="token-dialog" aria-label="Close sign in">×</button></div>
       <form id="token-form">
         <div id="token-error" class="dialog-error" role="alert" hidden></div>
         <div class="token-body">

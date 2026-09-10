@@ -73,6 +73,45 @@ class EngineSpec:
         return True, "Ready"
 
 
+def find_stockfish() -> tuple[list[str], str, dict[str, str | int | bool | None]]:
+    """Locate a Stockfish executable on PATH or in the repository's engines directory."""
+    if shutil.which("stockfish") is not None:
+        return ["stockfish"], "Stockfish 19", {"Threads": 1, "Hash": 64}
+
+    known_paths = [
+        ROOT
+        / ".chesslab"
+        / "engines"
+        / "stockfish19"
+        / "extracted"
+        / "stockfish"
+        / "stockfish-windows-x86-64-universal.exe",
+        ROOT
+        / ".chesslab"
+        / "engines"
+        / "stockfish19"
+        / "extracted"
+        / "stockfish"
+        / "stockfish-ubuntu-x86-64-universal",
+    ]
+    for candidate in known_paths:
+        if candidate.is_file():
+            return [str(candidate.resolve())], "Stockfish 19", {"Threads": 1, "Hash": 64}
+
+    engines_dir = ROOT / ".chesslab" / "engines"
+    if engines_dir.is_dir():
+        for candidate in sorted(engines_dir.glob("**/stockfish*.exe")):
+            if candidate.is_file():
+                return [str(candidate.resolve())], "Stockfish 19", {"Threads": 1, "Hash": 64}
+        for candidate in sorted(engines_dir.glob("**/stockfish*")):
+            if candidate.is_file() and not candidate.name.endswith(
+                (".zip", ".tar", ".gz", ".h", ".cpp", ".txt", ".md", ".json")
+            ):
+                return [str(candidate.resolve())], "Stockfish 19", {"Threads": 1, "Hash": 64}
+
+    return ["stockfish"], "Stockfish", {}
+
+
 def defaults() -> list[EngineSpec]:
     specs = [EngineSpec("candidate", "Working agent", "Candidate", description="Root agent.py")]
     for key, name, family, description in (
@@ -123,14 +162,16 @@ def defaults() -> list[EngineSpec]:
                 env={"CHESSLAB_STYLE": key},
             )
         )
+    stockfish_cmd, stockfish_name, stockfish_options = find_stockfish()
     specs.append(
         EngineSpec(
             "stockfish",
-            "Stockfish",
+            stockfish_name,
             "Stockfish",
             kind="uci",
-            command=["stockfish"],
-            description="External reference; version and executable hash recorded per run",
+            command=stockfish_cmd,
+            options=stockfish_options,
+            description="Official Stockfish 19 reference · one thread, full clock",
         )
     )
     return specs

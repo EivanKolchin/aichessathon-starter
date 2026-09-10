@@ -50,7 +50,7 @@ class FakeLab:
     def __init__(self, state: dict[str, Any] | None = None) -> None:
         self.state_now = state
         self.did: list[Any] = []
-        self.registry_path = Path("engines.json")
+        self.registry_path = scratch() / "engines.json"
 
     def catalog(self) -> dict[str, Any]:
         return {"engines": [], "openings": []}

@@ -214,6 +214,9 @@ class Runner:
                 self.push(run_id, local_id, game, sent, reported)
             if time.monotonic() - asked > STATUS_EVERY_S:
                 asked = time.monotonic()
+                # Playing a batch is the longest this machine goes without asking for work, so
+                # it has to say it is still here or the site reports it offline mid-experiment.
+                self.send("/api/runners/beat", {"runner": self.name})
                 if self.wanted_stopped(run_id):
                     self.lab.stop()
             if not state["busy"]:

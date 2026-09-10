@@ -128,10 +128,28 @@ missing assets binding is a blank site rather than a build error.
 `python -c "import secrets; print(secrets.token_urlsafe(32))"` and give the same string to
 everyone who uploads. D1 and R2 both have free tiers that comfortably cover two people.
 
+## Who can get in
+
+Three settings, in `wrangler.toml`, from most open to least:
+
+- `PUBLIC = "true"` — **no sign-in at all.** Anyone with the address can queue experiments, play
+  the engine and upload agents. Remember what those do: queueing an experiment makes code run on
+  whichever machine is offering itself as a runner, and an uploaded agent is Python that that
+  machine executes. A browser sends a name it made up for itself so two people do not end up
+  sharing one game; that name is not a credential and anyone can claim any name.
+- `PUBLIC = "false"` — the bearer token is the only way in. One shared secret, everyone who has
+  it gets in, kept in each browser's local storage.
+- `ACCESS_ENABLED = "true"` behind Cloudflare Access — named people, no shared secret in any
+  browser. See below; do not turn this on before the steps under it are done.
+
+The token and Access paths keep working whatever `PUBLIC` is set to, so a runner and the
+`chesslab ladder` client are unaffected by opening or closing the site.
+
 ## Locking it down
 
-As deployed above, the token is the only thing protecting the site, and the URL is public.
-That is fine for an afternoon; it is not where you want to leave it.
+With `PUBLIC = "true"` there is nothing protecting the site at all. With it off, the token is
+the only thing, and the URL is public. Either is fine for an afternoon; neither is where you
+want to leave it.
 
 1. Put the Worker on a custom domain (`routes` in `wrangler.toml`), then set
    `workers_dev = false` so the public `*.workers.dev` address stops answering.

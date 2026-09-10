@@ -22,11 +22,31 @@ const bytes = (value) => {
 };
 
 function token() {
-  return localStorage.getItem("ladder-token") || "";
+  try {
+    return localStorage.getItem("ladder-token") || "";
+  } catch {
+    return "";
+  }
+}
+
+// The name this browser goes by when the ladder is open and asks for no sign-in. Shared with
+// the arena, so an upload from here and a run from there belong to the same person.
+function viewer() {
+  try {
+    let name = localStorage.getItem("ladder-viewer") || "";
+    if (!name) {
+      name = `viewer-${crypto.randomUUID().slice(0, 8)}`;
+      localStorage.setItem("ladder-viewer", name);
+    }
+    return name;
+  } catch {
+    return "anyone";
+  }
 }
 
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
+  headers.set("X-Ladder-Owner", viewer());
   if (token()) headers.set("Authorization", `Bearer ${token()}`);
   const response = await fetch(path, { ...options, headers });
   const result = await response.json().catch(() => ({ error: `Request failed (${response.status})` }));
@@ -128,6 +148,7 @@ function send(form) {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("POST", "/api/upload");
+    request.setRequestHeader("X-Ladder-Owner", viewer());
     if (token()) request.setRequestHeader("Authorization", `Bearer ${token()}`);
     request.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {

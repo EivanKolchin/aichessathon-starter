@@ -1,3 +1,97 @@
 {
-  "engines": []
+  "engines": [
+    {
+      "id": "stockfish",
+      "name": "Stockfish 19",
+      "family": "Stockfish",
+      "kind": "uci",
+      "path": ".",
+      "description": "Official Stockfish 19 reference · one thread, full clock",
+      "command": [
+        "C:/Users/eivan/Desktop/Game/aichessathon-starter/.chesslab/engines/stockfish19/extracted/stockfish/stockfish-windows-x86-64-universal.exe"
+      ],
+      "options": {
+        "Threads": 1,
+        "Hash": 64
+      },
+      "env": {},
+      "requires": [],
+      "includes": [
+        "weights"
+      ],
+      "assets": [],
+      "max_move_ms": null
+    },
+    {
+      "id": "candidate",
+      "name": "A0 · working build",
+      "family": "Original A0 alpha-beta",
+      "kind": "python",
+      "path": ".",
+      "description": "Our original classical engine: PVS, incremental evaluation and clock control",
+      "command": [],
+      "options": {},
+      "env": {},
+      "requires": [],
+      "includes": [
+        "weights"
+      ],
+      "assets": [],
+      "max_move_ms": null
+    },
+    {
+      "id": "a0-001",
+      "name": "A0 0.1.0 reference",
+      "family": "Original A0 alpha-beta",
+      "kind": "python",
+      "path": ".chesslab/checkpoints/a0-0.1.0",
+      "description": "Frozen original A0 development reference; 9 September 2026",
+      "command": [],
+      "options": {},
+      "env": {},
+      "requires": [],
+      "includes": [
+        "weights"
+      ],
+      "assets": [],
+      "max_move_ms": null
+    },
+    {
+      "id": "a0-012",
+      "name": "A0 0.1.2 reference",
+      "family": "Original A0 alpha-beta",
+      "kind": "python",
+      "path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\checkpoints\\a0-0.1.2",
+      "description": "Frozen promotion-generation optimisation and clock fix; measured development reference",
+      "command": [],
+      "options": {},
+      "env": {},
+      "requires": [],
+      "includes": [
+        "weights"
+      ],
+      "assets": [],
+      "max_move_ms": null
+    },
+    {
+      "id": "a1-010",
+      "name": "A1 0.1.0 compiled experiment",
+      "family": "Original A1 alpha-beta",
+      "kind": "python",
+      "path": ".chesslab/checkpoints/a1-0.1.0",
+      "description": "Original compiled board/search, A0 evaluation formulas; experimental checkpoint",
+      "command": [],
+      "options": {},
+      "env": {},
+      "requires": [
+        "numpy",
+        "numba"
+      ],
+      "includes": [
+        "weights"
+      ],
+      "assets": [],
+      "max_move_ms": null
+    }
+  ]
 }

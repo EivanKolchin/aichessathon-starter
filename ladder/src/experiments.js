@@ -176,6 +176,18 @@ export async function claimJob(request, env, who) {
   return { job: { run_id: row.id, request: parse(row.request, {}) } };
 }
 
+// A runner in the middle of a batch is not talking to /api/jobs/claim, so without this it
+// vanishes from the site for the length of the experiment and the form empties out with it.
+// Deliberately separate from putRunStatus: a heartbeat must never be able to overwrite a stop
+// the site has just asked for.
+export async function beat(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const runner = String(body.runner ?? "").slice(0, 64);
+  if (!runner) return { error: "A heartbeat has to say which runner it is", status: 400 };
+  await env.DB.prepare("UPDATE runners SET seen_at = ? WHERE id = ?").bind(now(), runner).run();
+  return { ok: true };
+}
+
 export async function putManifest(request, env, id) {
   const body = await request.json();
   const manifest = body.manifest;

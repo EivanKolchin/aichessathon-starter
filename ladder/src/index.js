@@ -2,6 +2,7 @@
 // never runs one. Games are played by whoever pulls the catalogue down to their own machine.
 
 import {
+  beat,
   claimJob,
   listRunners,
   listRuns,
@@ -69,9 +70,19 @@ async function identify(request, env) {
   const header = request.headers.get("Authorization") || "";
   const offered = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (offered && (await sameSecret(offered, env.LADDER_TOKEN))) {
-    return { email: request.headers.get("X-Ladder-Owner") || "token", via: "token" };
+    return { email: owned(request) || "token", via: "token" };
   }
+  // PUBLIC opens every route to anyone with the address. The name a caller gives is then just
+  // a name and proves nothing - it keeps two browsers from sharing one game, and it is not a
+  // credential. Anyone can claim to be anyone, which is what having no sign-in means.
+  if (env.PUBLIC === "true") return { email: owned(request) || "anyone", via: "public" };
   return null;
+}
+
+// A caller-supplied name reaches D1 and the page, so it is held to something harmless.
+function owned(request) {
+  const name = request.headers.get("X-Ladder-Owner") || "";
+  return /^[A-Za-z0-9_-]{1,64}$/.test(name) ? name : "";
 }
 
 function slugify(value) {
@@ -285,6 +296,9 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/api/runners") {
         return json({ runners: await listRunners(env) });
+      }
+      if (request.method === "POST" && url.pathname === "/api/runners/beat") {
+        return reply(await beat(request, env));
       }
       if (request.method === "POST" && url.pathname === "/api/jobs/claim") {
         return json(await claimJob(request, env, who));
