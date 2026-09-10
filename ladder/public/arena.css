@@ -891,3 +891,57 @@ body.data-mode .results { margin-top: 0; }
 .speed-test span { color: var(--ink-4); font-variant-numeric: tabular-nums; }
 .speed-test:disabled { opacity: .5; }
 .sidebar-note { font-size: 10px; line-height: 1.6; color: var(--ink-4); padding: 8px 4px 0; }
+
+/* Every experiment, in one window. */
+.results-dialog { width: min(880px, calc(100vw - 36px)); }
+.results-log { padding: 6px 20px 12px; }
+.results-log .empty { color: var(--ink-4); font-size: 12px; padding: 20px 8px; }
+.result-entry { border-bottom: 1px solid var(--line-soft); }
+.result-entry:last-child { border-bottom: 0; }
+.result-entry > summary {
+  display: grid; grid-template-columns: 96px minmax(0, 1fr) 108px 132px; gap: 12px;
+  align-items: center; padding: 12px 8px; cursor: pointer; list-style: none;
+  border-radius: var(--r1); transition: background .14s;
+}
+.result-entry > summary::-webkit-details-marker { display: none; }
+.result-entry > summary:hover { background: var(--surface-2); }
+.result-entry[open] > summary { background: var(--surface-2); }
+.result-when { font-size: 11px; color: var(--ink-4); font-variant-numeric: tabular-nums; }
+.result-label strong { display: block; font-size: 12px; font-weight: 500; }
+.result-label small, .result-progress small, .result-score small {
+  display: block; font-size: 10px; color: var(--ink-4); margin-top: 3px;
+}
+.result-progress { font-size: 11px; color: var(--ink-2); display: flex; flex-direction: column; }
+.result-progress i {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px;
+  background: var(--ink-4); vertical-align: middle;
+}
+.result-progress i.completed { background: var(--sage); }
+.result-progress i.running, .result-progress i.stopping { background: var(--accent); }
+.result-progress i.failed, .result-progress i.interrupted, .result-progress i.stopped { background: var(--clay); }
+.result-score { font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+.result-detail { padding: 4px 8px 18px; }
+.result-error {
+  font-size: 11px; color: #f0b3a5; background: #2a1815; border-radius: var(--r1);
+  padding: 9px 11px; margin-bottom: 12px; overflow-wrap: anywhere;
+}
+.result-opponents { border: 1px solid var(--line-soft); border-radius: var(--r1); overflow: hidden; }
+.result-opponent {
+  display: grid; grid-template-columns: minmax(0, 1fr) 84px 74px 74px; gap: 10px;
+  padding: 8px 12px; font-size: 11px; color: var(--ink-2);
+  border-bottom: 1px solid var(--line-soft); font-variant-numeric: tabular-nums;
+}
+.result-opponent:last-child { border-bottom: 0; }
+.result-opponent-head {
+  font-size: 9px; letter-spacing: .7px; text-transform: uppercase; color: var(--ink-4);
+  background: var(--surface-2);
+}
+.result-facts {
+  display: flex; align-items: center; gap: 14px; margin-top: 11px;
+  font-size: 10px; color: var(--ink-4);
+}
+.result-facts .text-button { margin-left: auto; }
+@media (max-width: 720px) {
+  .result-entry > summary { grid-template-columns: minmax(0, 1fr) 108px; }
+  .result-when, .result-progress { display: none; }
+}

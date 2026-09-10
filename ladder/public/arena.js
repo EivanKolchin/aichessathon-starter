@@ -7,7 +7,7 @@ let catalog, catalogKey = "", run, game, runId = initialParams.get("run") || "",
 let frameIndex = 0, timer = null, polling = false, historyKey = "", gamesKey = "", moveKey = "";
 let selectionRevision = 0, lastRender = null;
 let play = null, guess = null, selected = "", targets = new Map();
-let signedIn = true, tokenAsked = false;
+let signedIn = true, tokenAsked = false, pollBanner = false;
 let playTimer = null, playRevision = 0, resultSeen = false, clockTimer = null, clockAnchor = null;
 const HUMAN = "you";
 const files = "abcdefgh";
@@ -369,6 +369,11 @@ async function poll() {
     if (revision !== selectionRevision) return;
     signedIn = true;
     tokenAsked = false;
+    // A banner that outlives what caused it is worse than no banner: it goes on saying the app
+    // is broken long after it recovered, and nothing else here ever takes it down. Whatever the
+    // poll reported, the poll working again is the answer to it. A run's own error is re-shown
+    // by renderRun below, so a real one stays put.
+    if (pollBanner) { $("error").hidden = true; pollBanner = false; }
     if ($("token-dialog").open) $("token-dialog").close();
     const runners = state.runners || [];
     const offered = runners.map((r) => r.catalog).find(Boolean) || null;
@@ -430,7 +435,7 @@ async function poll() {
       $("connection").textContent = error.status === 401
         ? "Waiting for the ladder token" : "Cannot reach the ladder";
     }
-    if (error.status !== 401) showError(error);
+    if (error.status !== 401) { pollBanner = true; showError(error); }
   } finally { polling = false; }
 }
 async function chooseGame(id) { selectionRevision++; pauseReplay(); following = false; gameId = id; frameIndex = 0; moveKey = ""; await poll(); }
@@ -668,9 +673,10 @@ function bindGameWindow() {
   $("g-first").addEventListener("click", () => { pauseDetail(); stepDetail(0); });
   $("g-previous").addEventListener("click", () => { pauseDetail(); stepDetail(detailIndex - 1); });
   $("g-next").addEventListener("click", () => { pauseDetail(); stepDetail(detailIndex + 1); });
-  $("g-last").addEventListener("click", () => { pauseDetail(); stepDetail(detail.frames.length - 1); });
+  $("g-last").addEventListener("click", () => { if (detail) { pauseDetail(); stepDetail(detail.frames.length - 1); } });
   $("g-play").addEventListener("click", () => {
     if (detailTimer) { pauseDetail(); return; }
+    if (!detail) return;
     if (detailIndex >= detail.frames.length - 1) stepDetail(0);
     $("g-play").textContent = "Ⅱ";
     $("g-play").setAttribute("aria-label", "Pause replay");
@@ -1290,6 +1296,76 @@ function bindPlay() {
   });
 }
 
+// ── Every experiment, in one place ────────────────────────────────────────────────────────
+// The arena shows one run at a time. This is the other question: what has this ladder actually
+// been asked to do, and how did each of them turn out. Counted by the Worker from the games a
+// runner reported, so an unfinished run is counted as far as it got rather than not at all.
+const stamp = (seconds) => new Date(seconds * 1000)
+  .toLocaleString(undefined, {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"});
+const clockOf = (limits) => limits?.base_ms
+  ? `${limits.base_ms/1000}s + ${limits.increment_ms/1000}s` : "—";
+
+function scoreLine(row) {
+  if (!row.completed) return '<span class="muted">no games yet</span>';
+  const played = row.wins + row.draws + row.losses;
+  const share = played ? ((row.wins + row.draws / 2) / played) : null;
+  return `<strong>${row.wins} / ${row.draws} / ${row.losses}</strong>`
+    + (share === null ? "" : ` <span class="muted">· ${(share * 100).toFixed(1)}%</span>`);
+}
+
+function resultRow(row, names) {
+  const failed = row.failures ? `<span class="failure-count">${row.failures} failure${row.failures === 1 ? "" : "s"}</span>` : "";
+  const voided = row.void ? `<span class="muted">${row.void} void</span>` : "";
+  const breakdown = (row.summary || []).map((entry) => `<div class="result-opponent"><span>${esc(names(row, entry.opponent))}</span><span>${entry.wins} / ${entry.draws} / ${entry.losses}</span><span>${entry.pairs} pairs</span><span>${pct(entry.score)}</span></div>`).join("");
+  return `<details class="result-entry" data-run="${esc(row.id)}">
+    <summary>
+      <span class="result-when">${esc(stamp(row.created_at))}</span>
+      <span class="result-label"><strong>${esc(row.label)}</strong><small>${esc(row.owner)}${row.runner ? ` · ${esc(row.runner)}` : ""} · ${esc(clockOf(row.limits))}${row.parallel_games > 1 ? ` · ${row.parallel_games} at once` : ""}</small></span>
+      <span class="result-progress"><i class="${esc(row.status)}"></i>${esc(row.status)}<small>${row.completed} / ${row.games} games</small></span>
+      <span class="result-score">${scoreLine(row)}<small>${failed}${failed && voided ? " · " : ""}${voided}</small></span>
+    </summary>
+    <div class="result-detail">
+      ${row.error ? `<p class="result-error">${esc(row.error)}</p>` : ""}
+      ${breakdown ? `<div class="result-opponents"><div class="result-opponent result-opponent-head"><span>Opponent</span><span>W / D / L</span><span>Pairs</span><span>Pair score</span></div>${breakdown}</div>` : '<p class="muted small">No per-opponent summary: the runner did not get far enough to report one.</p>'}
+      <div class="result-facts"><span>${esc(row.machine || "machine not recorded")}</span><span>${row.limits?.ply_cap ? `ply cap ${row.limits.ply_cap}` : ""}</span><button type="button" class="text-button" data-open-run="${esc(row.id)}">Open in the arena ›</button></div>
+    </div>
+  </details>`;
+}
+
+async function renderResults() {
+  const box = $("results-log");
+  try {
+    const rows = (await api("/api/results")).results || [];
+    $("results-count").textContent = rows.length;
+    const names = (row, id) => row.engines?.[id]?.name || engine(id).name;
+    box.innerHTML = rows.length
+      ? rows.map((row) => resultRow(row, names)).join("")
+      : '<p class="empty">Nothing has been run here yet.</p>';
+    const played = rows.reduce((total, row) => total + row.completed, 0);
+    $("results-total").textContent = `${rows.length} experiment${rows.length === 1 ? "" : "s"} · ${played} games`;
+  } catch (error) {
+    box.innerHTML = `<p class="empty">${esc(error.message || String(error))}</p>`;
+  }
+}
+
+function bindResults() {
+  $("open-results").addEventListener("click", () => {
+    if (!$("results-dialog").open) $("results-dialog").showModal();
+    renderResults();
+  });
+  $("results-refresh").addEventListener("click", renderResults);
+  $("results-log").addEventListener("click", async (event) => {
+    const open = event.target.closest("button[data-open-run]");
+    if (!open) return;
+    $("results-dialog").close();
+    selectionRevision++;
+    runId = open.dataset.openRun;
+    gameId = ""; following = false; frameIndex = 0; moveKey = ""; gamesKey = "";
+    pauseReplay();
+    await poll();
+  });
+}
+
 // A batch wants the machine to itself, so asking for one leaves the board rather than telling
 // you to. The form opens straight away and the game is handed back behind it.
 function openSetup() {
@@ -1308,6 +1384,7 @@ function bindArena() {
   document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => $(button.dataset.close).close()));
   bindPlay();
   bindRegistry();
+  bindResults();
   bindSweep();
   bindGameWindow();
   renderOpponents();

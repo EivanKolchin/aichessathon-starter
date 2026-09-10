@@ -5,6 +5,7 @@ import {
   beat,
   claimJob,
   listRunners,
+  listResults,
   listRuns,
   match,
   putFrames,
@@ -293,6 +294,9 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/api/runs") {
         return reply(await queueRun(request, env, who), 201);
+      }
+      if (request.method === "GET" && url.pathname === "/api/results") {
+        return json({ results: await listResults(env) });
       }
       if (request.method === "GET" && url.pathname === "/api/runners") {
         return json({ runners: await listRunners(env) });

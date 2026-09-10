@@ -617,9 +617,10 @@ function bindGameWindow() {
   $("g-first").addEventListener("click", () => { pauseDetail(); stepDetail(0); });
   $("g-previous").addEventListener("click", () => { pauseDetail(); stepDetail(detailIndex - 1); });
   $("g-next").addEventListener("click", () => { pauseDetail(); stepDetail(detailIndex + 1); });
-  $("g-last").addEventListener("click", () => { pauseDetail(); stepDetail(detail.frames.length - 1); });
+  $("g-last").addEventListener("click", () => { if (detail) { pauseDetail(); stepDetail(detail.frames.length - 1); } });
   $("g-play").addEventListener("click", () => {
     if (detailTimer) { pauseDetail(); return; }
+    if (!detail) return;
     if (detailIndex >= detail.frames.length - 1) stepDetail(0);
     $("g-play").textContent = "Ⅱ";
     $("g-play").setAttribute("aria-label", "Pause replay");

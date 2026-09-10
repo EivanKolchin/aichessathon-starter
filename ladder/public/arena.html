@@ -22,7 +22,7 @@
       <a class="nav-item active" href="#arena"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 11h18M11 3v18"/></svg>Arena<span class="nav-badge" id="nav-status">Idle</span></a>
       <button class="nav-item" id="open-play"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a2.6 2.6 0 0 1 1.6 4.7c1 .8 1.7 2 1.9 3.4H8.5c.2-1.4.9-2.6 1.9-3.4A2.6 2.6 0 0 1 12 3Z"/><path d="M6.5 21h11M9.4 12.1c.1 3.2-.6 6.1-1.7 8.9m6.9-8.9c-.1 3.2.6 6.1 1.7 8.9"/></svg>Play the engine<span class="nav-badge" id="play-badge" hidden>Live</span></button>
       <button class="nav-item" id="open-registry"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5M3 16l9 5 9-5"/></svg>Engine registry<span id="registry-count" class="nav-count">—</span></button>
-      <a class="nav-item" href="#results-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h17M9 15v-4m5 4V7m5 8v-6"/></svg>Results</a>
+      <button class="nav-item" id="open-results"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h17M9 15v-4m5 4V7m5 8v-6"/></svg>Results<span id="results-count" class="nav-count">—</span></button>
       <div class="sidebar-section-label recent-label">Recent experiments<button class="open-setup add-experiment" aria-label="Create an experiment">+</button></div>
       <div id="experiment-list" class="experiment-list"><p class="sidebar-empty">Your experiments will appear here.</p></div>
       <button id="speed-test" class="quiet speed-test" type="button">Speed test<span id="speed-count"></span></button>
@@ -63,6 +63,12 @@
       </form>
     </dialog>
 
+
+    <dialog id="results-dialog" class="results-dialog" aria-labelledby="results-dialog-title">
+      <div class="dialog-heading"><div><span class="dialog-icon" aria-hidden="true">♜</span><h1 id="results-dialog-title">Every experiment</h1><p class="muted intro">What has been run on this ladder, and what each one came to.</p></div><button class="close-dialog" data-close="results-dialog" aria-label="Close results">×</button></div>
+      <div id="results-log" class="results-log"><p class="empty">Loading…</p></div>
+      <div class="launch-footer"><div class="launch-summary"><strong id="results-total">—</strong><span id="results-note">Counted from the games each runner reported</span></div><button class="quiet" id="results-refresh" type="button">Refresh</button></div>
+    </dialog>
 
     <dialog id="token-dialog" class="token-dialog" aria-labelledby="token-title">
       <div class="dialog-heading"><div><span class="dialog-icon" aria-hidden="true">♞</span><h1 id="token-title">Sign in to the ladder</h1><p class="muted intro">This deployment is open: nobody needs a token to use it. If it is ever closed again, the shared token goes here, and it is kept in this browser only.</p></div><button class="close-dialog" data-close="token-dialog" aria-label="Close sign in">×</button></div>

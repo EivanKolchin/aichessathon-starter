@@ -52,7 +52,20 @@ function presentRun(row, games) {
 
 // ── what the site reads ───────────────────────────────────────────────────────────────────
 
+// A runner that dies mid-batch says nothing on its way out, so its run would sit at "running"
+// for ever and the site would keep claiming something is being played. A run whose runner has
+// stopped saying hello did not finish, and is recorded as what it is.
+async function reapAbandoned(env) {
+  await env.DB.prepare(
+    `UPDATE runs SET status = 'interrupted', finished_at = ?
+      WHERE status IN ('running', 'stopping')
+        AND (runner IS NULL
+             OR runner NOT IN (SELECT id FROM runners WHERE seen_at > ?))`,
+  ).bind(now(), now() - RUNNER_FRESH_MS).run();
+}
+
 export async function listRuns(env) {
+  await reapAbandoned(env);
   const { results } = await env.DB.prepare(
     `SELECT r.id, r.label, r.owner, r.status, r.runner, r.created_at,
             COUNT(g.id) AS games,
@@ -117,6 +130,63 @@ export async function listRunners(env) {
     run_id: row.run_id,
     catalog: parse(row.catalog, null),
   }));
+}
+
+// Every experiment this ladder has recorded, with what each one came to. Two queries rather
+// than a request per run: the browser asking fifty times would be the same answer, slower.
+const FAILED = new Set(["crash", "illegal", "flag", "init", "both_failed"]);
+const EMPTY = {games: 0, completed: 0, wins: 0, draws: 0, losses: 0, failures: 0, void: 0};
+
+export async function listResults(env) {
+  await reapAbandoned(env);
+  const { results: runs } = await env.DB.prepare(
+    `SELECT id, label, owner, status, runner, error, manifest, created_at, finished_at
+       FROM runs ORDER BY created_at DESC LIMIT 50`,
+  ).all();
+  if (!runs.length) return [];
+  const marks = runs.map(() => "?").join(",");
+  const { results: games } = await env.DB.prepare(
+    `SELECT run_id, white, black, opponent, status, result, termination
+       FROM games WHERE run_id IN (${marks})`,
+  ).bind(...runs.map((row) => row.id)).all();
+
+  const tally = new Map();
+  for (const game of games) {
+    const count = tally.get(game.run_id) || { ...EMPTY };
+    count.games++;
+    if (game.status === "completed") {
+      count.completed++;
+      // Which side the candidate was is not stored; it is whichever side is not the opponent.
+      if (!game.result || game.result === "void") count.void++;
+      else if (game.result === "draw") count.draws++;
+      else if ((game.result === "white" ? game.white : game.black) === game.opponent) {
+        count.losses++;
+        if (FAILED.has(game.termination)) count.failures++;
+      } else count.wins++;
+    }
+    tally.set(game.run_id, count);
+  }
+
+  return runs.map((row) => {
+    const manifest = parse(row.manifest, null) || {};
+    return {
+      id: row.id,
+      label: row.label,
+      owner: row.owner,
+      status: row.status,
+      runner: row.runner,
+      error: row.error,
+      created_at: row.created_at / 1000,
+      finished_at: row.finished_at ? row.finished_at / 1000 : null,
+      candidate: manifest.candidate ?? null,
+      engines: manifest.engines ?? null,
+      limits: manifest.limits ?? null,
+      parallel_games: manifest.environment?.parallel_games ?? null,
+      machine: manifest.environment?.platform ?? null,
+      summary: manifest.summary ?? [],
+      ...(tally.get(row.id) || { ...EMPTY }),
+    };
+  });
 }
 
 // ── what the site writes ──────────────────────────────────────────────────────────────────
