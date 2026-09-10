@@ -80,3 +80,21 @@ CREATE TABLE IF NOT EXISTS runners (
   run_id    TEXT,
   catalog   TEXT              -- engines and openings this machine can actually play
 );
+
+-- Sparring games. The Worker holds the request, the one pending instruction from the browser
+-- and the position the runner last reported; the game itself is played on the runner's machine,
+-- the same way an experiment is. One live session per person.
+CREATE TABLE IF NOT EXISTS plays (
+  id         TEXT PRIMARY KEY,
+  owner      TEXT NOT NULL,
+  runner     TEXT,
+  request    TEXT NOT NULL,     -- engine, colour, clock and starting position, as asked for
+  command    TEXT,              -- one instruction waiting to be applied: move, undo, resign, end
+  state      TEXT,              -- the session exactly as the runner's board reported it
+  status     TEXT NOT NULL,     -- requested live over ended
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS plays_owner ON plays (owner, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS plays_open ON plays (status, created_at);

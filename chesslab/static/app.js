@@ -266,7 +266,7 @@ function renderRun() {
   }
   $("game-select").value = gameId;
   const summaries = run.summary || [];
-  $("results-body").innerHTML = summaries.map((row) => `<tr><td><strong>${esc(engine(row.opponent).name)}</strong><small>${esc(engine(row.opponent).family)}</small></td><td>${row.wins} / ${row.draws} / ${row.losses}</td><td>${row.pairs}</td><td class="score-value">${pct(row.score)}</td><td title="${esc(row.interval_method)}">${row.interval ? `${Math.round(row.interval[0]*100)}–${Math.round(row.interval[1]*100)}%` : "—"}</td><td class="${row.candidate_failures ? "failure-count" : ""}" title="Candidate losses to clock, crash, illegal move or init failure">${row.candidate_failures}${row.void ? ` (+${row.void} void)` : ""}</td></tr>`).join("");
+  $("results-body").innerHTML = summaries.map((row) => `<tr><td><strong>${esc(engine(row.opponent).name)}</strong><small>${esc(engine(row.opponent).family)}</small></td><td>${row.wins} / ${row.draws} / ${row.losses}</td><td>${row.pairs}</td><td class="score-value">${pct(row.score)}</td><td title="${esc(row.interval_method)}">${row.interval ? `${Math.round(row.interval[0]*100)}–${Math.round(row.interval[1]*100)}%` : "—"}</td><td class="${row.candidate_failures ? "failure-count" : ""}" title="Candidate clock, crash, illegal move or init failures, including draws and void games">${row.candidate_failures}${row.void ? ` (+${row.void} void)` : ""}</td></tr>`).join("");
   const families = new Set(summaries.map((r) => engine(r.opponent).family));
   $("coverage-count").textContent = `${summaries.length} OPPONENTS / ${families.size} FAMILIES`;
   $("contention").hidden = atOnce < 2;
@@ -1162,10 +1162,12 @@ async function init() {
   renderBoard();
   for (const id of ["moves", "opponents", "experiment-list"]) trackScrollable($(id));
   bindPlay();
+  // A batch wants the core to itself, so asking for one leaves the board rather than telling
+  // you to. The form opens straight away and the game is closed behind it.
   document.querySelectorAll(".open-setup").forEach((button) => button.addEventListener("click", () => {
     clearError();
+    if (playing()) leavePlay().catch(showError);
     $("setup-dialog").showModal();
-    if (playing()) showError(new Error("Leave your game first: a batch and a game would share one core."));
   }));
   document.querySelectorAll("[data-close]").forEach((button) => button.addEventListener("click", () => $(button.dataset.close).close()));
   bindRegistry();

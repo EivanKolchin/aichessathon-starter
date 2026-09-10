@@ -1,0 +1,227 @@
+{
+  "version": "0.1.2",
+  "increment_estimate_ms": 95,
+  "trials": [
+    {
+      "source_game": "g00022",
+      "repeat": 0,
+      "fen": "8/6K1/8/4k3/8/8/pp6/3q1q2 b - - 1 66",
+      "remaining_ms": 108,
+      "move": "b2b1q",
+      "elapsed_ms": 78.09920003637671,
+      "referee_ms": 77.9999999795109,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00022",
+      "repeat": 1,
+      "fen": "8/6K1/8/4k3/8/8/pp6/3q1q2 b - - 1 66",
+      "remaining_ms": 108,
+      "move": "b2b1q",
+      "elapsed_ms": 78.07990000583231,
+      "referee_ms": 78.00000003771856,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00022",
+      "repeat": 2,
+      "fen": "8/6K1/8/4k3/8/8/pp6/3q1q2 b - - 1 66",
+      "remaining_ms": 108,
+      "move": "b2b1q",
+      "elapsed_ms": 78.06969998637214,
+      "referee_ms": 77.9999999795109,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00022",
+      "repeat": 3,
+      "fen": "8/6K1/8/4k3/8/8/pp6/3q1q2 b - - 1 66",
+      "remaining_ms": 108,
+      "move": "b2b1q",
+      "elapsed_ms": 78.07869999669492,
+      "referee_ms": 77.9999999795109,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00022",
+      "repeat": 4,
+      "fen": "8/6K1/8/4k3/8/8/pp6/3q1q2 b - - 1 66",
+      "remaining_ms": 108,
+      "move": "b2b1q",
+      "elapsed_ms": 78.0755000305362,
+      "referee_ms": 78.00000003771856,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00038",
+      "repeat": 0,
+      "fen": "4K3/8/4p3/4qb2/2kp4/8/6p1/8 b - - 1 67",
+      "remaining_ms": 108,
+      "move": "d4d3",
+      "elapsed_ms": 71.73740002326667,
+      "referee_ms": 62.999999965541065,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00038",
+      "repeat": 1,
+      "fen": "4K3/8/4p3/4qb2/2kp4/8/6p1/8 b - - 1 67",
+      "remaining_ms": 108,
+      "move": "d4d3",
+      "elapsed_ms": 75.22109994897619,
+      "referee_ms": 78.00000003771856,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00038",
+      "repeat": 2,
+      "fen": "4K3/8/4p3/4qb2/2kp4/8/6p1/8 b - - 1 67",
+      "remaining_ms": 108,
+      "move": "d4d3",
+      "elapsed_ms": 75.62660000985488,
+      "referee_ms": 77.9999999795109,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00038",
+      "repeat": 3,
+      "fen": "4K3/8/4p3/4qb2/2kp4/8/6p1/8 b - - 1 67",
+      "remaining_ms": 108,
+      "move": "d4d3",
+      "elapsed_ms": 77.80319999437779,
+      "referee_ms": 77.9999999795109,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00038",
+      "repeat": 4,
+      "fen": "4K3/8/4p3/4qb2/2kp4/8/6p1/8 b - - 1 67",
+      "remaining_ms": 108,
+      "move": "d4d3",
+      "elapsed_ms": 78.12680001370609,
+      "referee_ms": 78.00000003771856,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00064",
+      "repeat": 0,
+      "fen": "1K4k1/7p/8/3q1p1R/2r3p1/4n3/8/8 b - - 3 65",
+      "remaining_ms": 108,
+      "move": "d5b5",
+      "elapsed_ms": 51.18369997944683,
+      "referee_ms": 46.999999962281436,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00064",
+      "repeat": 1,
+      "fen": "1K4k1/7p/8/3q1p1R/2r3p1/4n3/8/8 b - - 3 65",
+      "remaining_ms": 108,
+      "move": "d5b5",
+      "elapsed_ms": 45.41269998298958,
+      "referee_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00064",
+      "repeat": 2,
+      "fen": "1K4k1/7p/8/3q1p1R/2r3p1/4n3/8/8 b - - 3 65",
+      "remaining_ms": 108,
+      "move": "d5b5",
+      "elapsed_ms": 45.49259995110333,
+      "referee_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00064",
+      "repeat": 3,
+      "fen": "1K4k1/7p/8/3q1p1R/2r3p1/4n3/8/8 b - - 3 65",
+      "remaining_ms": 108,
+      "move": "d5b5",
+      "elapsed_ms": 42.862000002060086,
+      "referee_ms": 46.999999962281436,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00064",
+      "repeat": 4,
+      "fen": "1K4k1/7p/8/3q1p1R/2r3p1/4n3/8/8 b - - 3 65",
+      "remaining_ms": 108,
+      "move": "d5b5",
+      "elapsed_ms": 43.00700000021607,
+      "referee_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00066",
+      "repeat": 0,
+      "fen": "4K3/8/8/R2k4/8/6p1/4p1p1/8 b - - 17 63",
+      "remaining_ms": 124,
+      "move": "d5c6",
+      "elapsed_ms": 68.15010000718758,
+      "referee_ms": 61.999999976251274,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00066",
+      "repeat": 1,
+      "fen": "4K3/8/8/R2k4/8/6p1/4p1p1/8 b - - 17 63",
+      "remaining_ms": 124,
+      "move": "d5c6",
+      "elapsed_ms": 67.71350000053644,
+      "referee_ms": 63.000000023748726,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00066",
+      "repeat": 2,
+      "fen": "4K3/8/8/R2k4/8/6p1/4p1p1/8 b - - 17 63",
+      "remaining_ms": 124,
+      "move": "d5c6",
+      "elapsed_ms": 67.73519999114797,
+      "referee_ms": 77.9999999795109,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00066",
+      "repeat": 3,
+      "fen": "4K3/8/8/R2k4/8/6p1/4p1p1/8 b - - 17 63",
+      "remaining_ms": 124,
+      "move": "d5c6",
+      "elapsed_ms": 67.91990000056103,
+      "referee_ms": 62.000000034458935,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "source_game": "g00066",
+      "repeat": 4,
+      "fen": "4K3/8/8/R2k4/8/6p1/4p1p1/8 b - - 17 63",
+      "remaining_ms": 124,
+      "move": "d5e6",
+      "elapsed_ms": 94.13539996603504,
+      "referee_ms": 93.99999998277053,
+      "legal": true,
+      "within_clock": true
+    }
+  ],
+  "limitations": "Direct calls with fresh history and estimated increment; excludes IPC and is supplemented by full paired games."
+}

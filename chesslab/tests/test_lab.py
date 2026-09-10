@@ -67,6 +67,28 @@ class ExperimentTests(unittest.TestCase):
             {"engines": [EngineSpec(key, key, "Fixture", path=str(directory)).data()]},
         )
 
+    def test_old_failure_summary_refreshes_without_rewriting_evidence(self) -> None:
+        games = schedule("candidate", ["random"], catalog()[:1], 1)
+        for game in games:
+            game.update(status="completed", result="draw", termination="flag", plies=0)
+        path = self.lab.data_dir / "historical" / "manifest.json"
+        write_json(
+            path,
+            {
+                "id": "historical",
+                "label": "Old summary",
+                "status": "completed",
+                "created_at": 1,
+                "games": games,
+                "candidate": "candidate",
+                "summary": [{"candidate_failures": 0}],
+            },
+        )
+        original = path.read_bytes()
+        result = self.lab.state("historical")["run"]
+        self.assertEqual(result["summary"][0]["candidate_failures"], 1)
+        self.assertEqual(path.read_bytes(), original)
+
     def test_real_games_persist_and_replay(self) -> None:
         run = self.run_batch()
         self.assertEqual(run["status"], "completed")
@@ -185,7 +207,9 @@ class ExperimentTests(unittest.TestCase):
         blocked.set()
         self.assertLess(elapsed, 5, "the probe was allowed to block")
         self.assertEqual(set(described), {"platform", "processor", "machine", "host"})
-        self.assertIn("description unavailable", described["platform"])
+        # Still names the operating system, and still says the detail is missing.
+        self.assertIn("version not read", described["platform"])
+        self.assertTrue(described["platform"].split(" (")[0])
         self.assertTrue(described["host"], "the host name has a cheap source")
 
     def test_a_parallel_run_is_not_comparable_with_a_sequential_one(self) -> None:
@@ -497,6 +521,35 @@ class IntegrityTests(unittest.TestCase):
         self.assertEqual(summary["void"], 1)
         self.assertEqual(summary["score"], 0.5)
         self.assertEqual(summary["interval"], [0, 1])
+        self.assertEqual(summary["candidate_failures"], 1)
+
+    def test_drawn_flags_count_against_the_side_that_ran_out_of_time(self) -> None:
+        for starting_side in ("w", "b"):
+            for plies in (0, 1, 120, 125):
+                games = schedule("candidate", ["random"], catalog()[:1], 1)
+                for game in games:
+                    game["opening"] = {
+                        **game["opening"],
+                        "fen": f"8/6K1/8/4k3/8/8/pp6/3q1q2 {starting_side} - - 1 66",
+                    }
+                    game.update(status="completed", result="draw", termination="flag", plies=plies)
+                with self.subTest(starting_side=starting_side, plies=plies):
+                    # Same side flags in both colour-swapped games: one belongs to us.
+                    self.assertEqual(summarise(games, "candidate")[0]["candidate_failures"], 1)
+                    expected_side = (
+                        "white" if (starting_side == "w") != bool(plies % 2) else "black"
+                    )
+                    for game in games:
+                        self.assertEqual(
+                            summarise([game], "candidate")[0]["candidate_failures"],
+                            int(game[expected_side] == "candidate"),
+                        )
+
+    def test_decisive_startup_failures_use_result_instead_of_side_to_move(self) -> None:
+        games = schedule("candidate", ["random"], catalog()[:1], 1)
+        games[0].update(status="completed", result="white", termination="init", plies=0)
+        games[1].update(status="completed", result="white", termination="crash", plies=0)
+        self.assertEqual(summarise(games, "candidate")[0]["candidate_failures"], 1)
 
     def test_replay_promotion_castling_and_en_passant(self) -> None:
         cases = (

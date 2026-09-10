@@ -316,8 +316,10 @@ score or comparison. Failed/interrupted experiments cannot be compared.
 
 The displayed score is the average candidate score over **complete colour pairs**: a win is 1,
 a draw is 0.5, a loss is 0. UI W/D/L totals include all completed non-void games, including an
-unmatched final game. A failure count records candidate losses due to flags, crashes, illegal
-moves or init failures. A game-map `!` can also indicate that the opponent failed. Void games
+unmatched final game. A failure count records candidate flags, crashes, illegal moves or init
+failures, including flags awarded as draws and void games where both agents failed. Historical
+summaries are refreshed on read without rewriting match evidence. A game-map `!` can also
+indicate that the opponent failed. Void games
 are counted separately and never scored. Final clock frames are reconstructed from referee PGN
 annotations; live clock observations are approximate. Failed move attempts are not legal PGN moves.
 
@@ -336,6 +338,17 @@ runs on an otherwise idle Linux environment matched to the competition. Agents a
 code: this is not a sandbox for untrusted executable uploads.
 
 ## Research loop to build on this foundation
+
+To audit an exported directory without running any of its engine configuration:
+
+```powershell
+.venv\Scripts\python.exe -m chesslab.experiments.audit_run C:/path/to/export --out .chesslab/audit-new.json
+```
+
+The report verifies legal PGN replay against frames, records source hashes, identifies failure
+positions and recalculates the opponent summaries. It treats truncated search logs as diagnostic
+samples. Choose a new output file for each audit. Current engine measurements and the supplied
+70-game audit are documented in [the 0.1.2 report](../docs/research/a0-0.1.2-results.md).
 
 1. Establish an original classical candidate and a fixed reference checkpoint. Keep a saved JSON
    experiment protocol with full clocks/caps and pinned opponent versions.

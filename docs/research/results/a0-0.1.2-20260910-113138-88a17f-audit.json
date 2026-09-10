@@ -1,0 +1,406 @@
+{
+  "schema": 1,
+  "source_directory": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\a0-0.1.2-qmoves-clock\\.chesslab\\runs\\20260910-113138-88a17f",
+  "run_id": "20260910-113138-88a17f",
+  "status": "completed",
+  "limits": {
+    "base_ms": 5000,
+    "increment_ms": 50,
+    "ply_cap": 600,
+    "seed": 20260910
+  },
+  "scheduled": 20,
+  "statuses": {
+    "completed": 20
+  },
+  "verified_games": 20,
+  "verified_accepted_plies": 2083,
+  "combined_pgn_verified": false,
+  "source_hashes": {
+    "manifest.json": "1e6d025203804edace758316bbc042dcf127add906e3a466fc514f95d73c0c98",
+    "games/g00001.json": "1b9ffecf4bd00211c6280862b04aea1ed63132f9311ac80d3ffdf4b1ec565f71",
+    "games/g00002.json": "07732173b0c15a706fd9732b516cee5143e885d8c1a71647f69cc4fe6030b45f",
+    "games/g00003.json": "4e58fef620b78fce59ce6fe5789a5ac1025d0650c0883bba9073c61393e8c3c9",
+    "games/g00004.json": "1d24ea4008b6668e7d752563eded9dfad4e91fe17edd4324f1f01bbc4b36b58b",
+    "games/g00005.json": "9f5b7adc15b8458faec7cdeac2a39eb3288053c92a18b2782801a166f2809464",
+    "games/g00006.json": "626b2009e6539afb5284e9571e21eb27724846662c71bf7a31f6183d258913ab",
+    "games/g00007.json": "5819a110d0c75a06861f47b586ba2a46517935d596b81a5acca2be0e183aaa7e",
+    "games/g00008.json": "1463c80b57793a0ad06048b916fc87da8b9a1be1141d21bf362518508a03d702",
+    "games/g00009.json": "528b5c7603d04266885acbedf593f95e1d6fae9e86afadb82d219082685bf7a9",
+    "games/g00010.json": "e67f8113f11344c8dfae020eb06113a2f230bfce90b5e9d3c8ed017ce2dfd86a",
+    "games/g00011.json": "404c9e6e44dbdf67302b267199277e4f88b36cbc4186f9a8db3ca6185caf9309",
+    "games/g00012.json": "3e76d9d77fe7aa882524d8cd3738e3a2f21498d522b1d447f3eb72d379d457fb",
+    "games/g00013.json": "acb1bc94ec5a29483c3856a75ef357e45b5ebc7d325082e223cb90d997243459",
+    "games/g00014.json": "88531fa4729032f242620cddd7389293911c982131b504581499327d390bd6e2",
+    "games/g00015.json": "96202d66c893d1779d4d465e392cd889445104a30306613f3a6a22fcbec4e6b6",
+    "games/g00016.json": "e90f18d44375cadee032607655f9a1a4f5ee18cffeec6799a53780dc25e820a0",
+    "games/g00017.json": "9c26d13c5ca27943c9f25e3ac160e357bbac09d5012cbe81ed411a3c02df3277",
+    "games/g00018.json": "d65d0a3bf33e7a1cb2e1ff157db1ab1a916df1b5b81f5bb1809a65dbc7c71049",
+    "games/g00019.json": "b26520a63e45ae64f0cdcaf04d2d96cadf6d7c2835f5b4a0faf937dd2e0d07c1",
+    "games/g00020.json": "fd56d5eb0e80b6f061252d9556cd87a7ee71279c06770124d53309002042aaf0"
+  },
+  "recorded_candidate_build": {
+    "id": "candidate",
+    "name": "A0 \u00b7 working build",
+    "family": "Original A0 alpha-beta",
+    "kind": "python",
+    "path": ".",
+    "description": "Our original classical engine: PVS, incremental evaluation and clock control",
+    "command": [],
+    "options": {},
+    "env": {},
+    "requires": [],
+    "includes": [
+      "weights"
+    ],
+    "assets": [],
+    "max_move_ms": null,
+    "frozen_path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\a0-0.1.2-qmoves-clock\\.chesslab\\runs\\20260910-113138-88a17f\\builds\\candidate",
+    "files": {
+      "agent.py": "b4db36fbe2f49bb7fa03d9cbe31a7685d08e1cc2054ea8ea1dbcc9903f9a6b12",
+      "a0/__init__.py": "2cd4b94de800a6ede37e12f7802b77b1e555531b691eebfcc8de665a06755439",
+      "a0/engine.py": "6fa1b27f4eef665c2d63bf9179bde51bd3b04ce0f1e4257d819ca084ca898d03",
+      "a0/evaluation.py": "87188241d5d0e8343691081edf391542515f5efd67e356d0942d18c7a086bd7a",
+      "a0/README.md": "d83636fd7cfcbe5a0c6fb731df0128ccaea956fdf7358d7659c0b96733c8fce4",
+      "a0/search.py": "950efdac817f159ba6d446aaee80c9239d0b780ed5e1e67bf1c1ce16d4964508"
+    },
+    "sha256": "ba0d92bb88642d2552a5496b5ffbf6effe7d87efb65143b5b4eeb9c47884955c"
+  },
+  "logged_versions": {
+    "A0 0.1.2": 837
+  },
+  "original_summary": [
+    {
+      "opponent": "a0-001",
+      "games": 20,
+      "scheduled": 20,
+      "wins": 14,
+      "draws": 3,
+      "losses": 3,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 10,
+      "score": 0.775,
+      "interval": [
+        0.34553059165326244,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 5
+    }
+  ],
+  "corrected_summary": [
+    {
+      "opponent": "a0-001",
+      "games": 20,
+      "scheduled": 20,
+      "wins": 14,
+      "draws": 3,
+      "losses": 3,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 10,
+      "score": 0.775,
+      "interval": [
+        0.34553059165326244,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 5
+    }
+  ],
+  "nonwins": [
+    {
+      "game": "g00002",
+      "opponent": "a0-001",
+      "opening": "italian",
+      "candidate_colour": "black",
+      "result": "draw",
+      "termination": "insufficient_material",
+      "candidate_failed": false,
+      "plies": 140,
+      "final_fen": "1n6/4k3/8/8/3K4/8/8/8 w - - 0 75",
+      "side_to_move": "white",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A0 0.1.2",
+        "move": "d7b8",
+        "depth": 4,
+        "score_cp": 0,
+        "nodes": 353,
+        "qnodes": 234,
+        "tt_hits": 0,
+        "elapsed_ms": 47.8,
+        "pv": [
+          "d7b8"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 0,
+          "n": 1,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00007",
+      "opponent": "a0-001",
+      "opening": "english",
+      "candidate_colour": "white",
+      "result": "black",
+      "termination": "checkmate",
+      "candidate_failed": false,
+      "plies": 158,
+      "final_fen": "q1K5/8/3k4/8/3b4/8/8/8 w - - 47 84",
+      "side_to_move": "white",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A0 0.1.2",
+        "move": "b8c8",
+        "depth": 2,
+        "score_cp": -29998,
+        "nodes": 50,
+        "qnodes": 49,
+        "tt_hits": 0,
+        "elapsed_ms": 12.4,
+        "pv": [
+          "b8c8",
+          "d5a8"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 0,
+          "n": 0,
+          "b": 1,
+          "r": 0,
+          "q": 1,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00011",
+      "opponent": "a0-001",
+      "opening": "winawer",
+      "candidate_colour": "white",
+      "result": "draw",
+      "termination": "insufficient_material",
+      "candidate_failed": false,
+      "plies": 180,
+      "final_fen": "5K2/8/8/3k4/8/8/8/8 b - - 0 96",
+      "side_to_move": "black",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A0 0.1.2",
+        "move": "e8f8",
+        "depth": 10,
+        "score_cp": 0,
+        "nodes": 807,
+        "qnodes": 465,
+        "tt_hits": 0,
+        "elapsed_ms": 48.9,
+        "pv": [
+          "e8f8"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00012",
+      "opponent": "a0-001",
+      "opening": "winawer",
+      "candidate_colour": "black",
+      "result": "white",
+      "termination": "checkmate",
+      "candidate_failed": false,
+      "plies": 70,
+      "final_fen": "6Rk/8/3P2Qp/3Bp1p1/1p4P1/4P2P/7K/8 b - - 0 41",
+      "side_to_move": "black",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A0 0.1.2",
+        "move": "g7g8",
+        "depth": 1,
+        "score_cp": -29998,
+        "nodes": 6,
+        "qnodes": 6,
+        "tt_hits": 0,
+        "elapsed_ms": 2.0,
+        "pv": [
+          "g7g8"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 4,
+          "n": 0,
+          "b": 1,
+          "r": 1,
+          "q": 1,
+          "k": 1
+        },
+        "black": {
+          "p": 4,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00015",
+      "opponent": "a0-001",
+      "opening": "reti",
+      "candidate_colour": "white",
+      "result": "black",
+      "termination": "checkmate",
+      "candidate_failed": false,
+      "plies": 92,
+      "final_fen": "5k2/8/1R2pNKr/p7/P2r1b2/6p1/4b3/8 w - - 2 51",
+      "side_to_move": "white",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A0 0.1.2",
+        "move": "g5g6",
+        "depth": 2,
+        "score_cp": -29998,
+        "nodes": 61,
+        "qnodes": 60,
+        "tt_hits": 0,
+        "elapsed_ms": 11.0,
+        "pv": [
+          "g5g6",
+          "h2h6"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 1,
+          "n": 1,
+          "b": 0,
+          "r": 1,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 3,
+          "n": 0,
+          "b": 2,
+          "r": 2,
+          "q": 0,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00019",
+      "opponent": "a0-001",
+      "opening": "scotch",
+      "candidate_colour": "white",
+      "result": "draw",
+      "termination": "flag",
+      "candidate_failed": false,
+      "plies": 145,
+      "final_fen": "8/8/8/K7/2q5/4k3/8/8 b - - 7 77",
+      "side_to_move": "black",
+      "remaining_before_rejected_move_ms": 62.0,
+      "last_retained_search": {
+        "engine": "A0 0.1.2",
+        "move": "b6a5",
+        "depth": 3,
+        "score_cp": -989,
+        "nodes": 431,
+        "qnodes": 362,
+        "tt_hits": 3,
+        "elapsed_ms": 61.2,
+        "pv": [
+          "b6a5",
+          "e3e4",
+          "a5b6"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 1,
+          "k": 1
+        }
+      }
+    }
+  ],
+  "retained_telemetry": {
+    "a0-001": {
+      "rows": 837,
+      "depth_counts": {
+        "2": 427,
+        "3": 250,
+        "1": 111,
+        "4": 38,
+        "0": 1,
+        "5": 7,
+        "10": 1,
+        "6": 1,
+        "7": 1
+      },
+      "median_depth": 2,
+      "quiescence_node_fraction": 0.9294296375475237
+    }
+  },
+  "limitations": [
+    "Interrupted or queued games are unscored; this is not a complete league.",
+    "Log telemetry is truncated and is not an unbiased sample of all moves.",
+    "Replay verifies recorded legal moves/results, not execution or wall-clock accuracy.",
+    "Build hashes identify the declared build; no engine paths or commands were executed."
+  ]
+}

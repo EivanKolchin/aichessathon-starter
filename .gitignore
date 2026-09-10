@@ -9,3 +9,5 @@ submission.zip
 .tools/
 ladder/node_modules/
 ladder/.wrangler/
+.wrangler/
+.dev.vars

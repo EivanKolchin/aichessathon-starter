@@ -1,4 +1,7 @@
-# Chess Ladder — shared agent catalogue
+# Chess Lab online — shared catalogue, hosted experiments, hosted games
+
+The site calls itself Chess Lab, the same as the local app. "Ladder" is the name of this
+directory, the Worker's database and the `chesslab ladder` client, and it stays there.
 
 A small Cloudflare Worker that holds everybody's agent builds in one place. You drop a zip (or
 a folder) on the site, it is validated, and it appears for everyone signed in. Each person then
@@ -36,7 +39,30 @@ The claim doubles as a heartbeat and carries the engines and positions that mach
 the site only ever offers opponents a runner actually has. With no runner online, queued
 experiments simply wait.
 
-Two things this design does not give you, and should not be read as giving you:
+## Playing the engine from the site
+
+The same exchange, one board instead of a batch. **Play the engine** queues a game; the runner
+picks it up, plays it with the code the lab already uses, and posts the position back after
+every move. Your move travels the other way as one instruction parked on the Worker until that
+runner takes it.
+
+```
+browser ──move──▶ Worker ──instruction──▶ chesslab runner ──plays──▶ position ──▶ Worker ──▶ browser
+```
+
+A move shows on the board the moment you make it, before any of that has happened: the page
+applies the move it was already told is legal so a click does not feel dropped, and replaces
+that position with the runner's the moment it arrives. It is the one position on the page
+nobody has confirmed, and it is never written anywhere.
+
+**A machine plays one thing at a time.** While a game is live the runner will not claim a
+queued experiment, because a game running beside a batch would be taking time out of the
+batch's measurements. A finished game hands the machine back while still leaving the final
+position on screen; starting a batch is what ends it.
+
+## Two things this design does not give you
+
+They should not be read as giving you:
 
 - **Games run on whoever started them.** A run measures that machine. The manifest already
   records the platform, the core count and how many games were in flight; the runner adds its
@@ -187,4 +213,13 @@ npx wrangler dev
 ```
 
 Uses local D1 and R2 emulation. Apply the schema to the local database first with
-`npx wrangler d1 execute chess-ladder --local --file=./schema.sql`.
+`npx wrangler d1 execute chess-ladder --local --file=./schema.sql`, and put the bearer token in
+a `.dev.vars` file at the repository root so `identify()` has something to compare against:
+
+```
+LADDER_TOKEN = "whatever you gave wrangler secret put"
+```
+
+`.dev.vars` is git-ignored. Point a runner at it with
+`python -m chesslab runner --url http://127.0.0.1:8787`, and open `/arena`; the site asks for
+the token once and keeps it in that browser.

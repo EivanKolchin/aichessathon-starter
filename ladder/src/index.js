@@ -15,6 +15,14 @@ import {
   readRun,
   stopRun,
 } from "./experiments.js";
+import {
+  claimPlay,
+  commandPlay,
+  matchPlay,
+  putPlayState,
+  readPlay,
+  startPlay,
+} from "./play.js";
 import { inspect } from "./unzip.js";
 
 const ZIP_TYPES = ["application/zip", "application/x-zip-compressed", "application/octet-stream"];
@@ -265,7 +273,12 @@ export default {
 
       // Experiments: queued here, played on somebody's machine, reported back here.
       if (request.method === "GET" && url.pathname === "/api/runs") {
-        return json({ viewer: who, runs: await listRuns(env), runners: await listRunners(env) });
+        return json({
+          viewer: who,
+          runs: await listRuns(env),
+          runners: await listRunners(env),
+          play: await readPlay(env, who),
+        });
       }
       if (request.method === "POST" && url.pathname === "/api/runs") {
         return reply(await queueRun(request, env, who), 201);
@@ -275,6 +288,27 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/api/jobs/claim") {
         return json(await claimJob(request, env, who));
+      }
+
+      // Sparring. The same shape of exchange as an experiment: the browser asks, a runner
+      // plays, the position comes back here.
+      if (request.method === "GET" && url.pathname === "/api/play") {
+        return json({ play: await readPlay(env, who) });
+      }
+      if (request.method === "POST" && url.pathname === "/api/play") {
+        return reply(await startPlay(request, env, who), 201);
+      }
+      if (request.method === "POST" && url.pathname === "/api/play/claim") {
+        return json(await claimPlay(request, env, who));
+      }
+      for (const kind of ["move", "undo", "resign", "end"]) {
+        if (request.method === "POST" && url.pathname === `/api/play/${kind}`) {
+          return reply(await commandPlay(request, env, who, kind));
+        }
+      }
+      const session = matchPlay(url.pathname);
+      if (session && request.method === "POST") {
+        return reply(await putPlayState(request, env, session.playId));
       }
       const route = match(url.pathname);
       if (route && request.method === "GET" && route.kind === "run") {

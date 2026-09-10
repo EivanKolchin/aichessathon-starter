@@ -21,8 +21,12 @@ from chesslab.lab import Lab, machine_description
 from chesslab.ladder import Endpoint
 
 POLL_S = 2.0
+PLAY_POLL_S = 0.35
 STREAM_S = 0.4
 STATUS_EVERY_S = 2.0
+# The browser counts a running clock down on its own between polls; this is how often it is
+# told what the board's clock actually says, so the two cannot drift far apart.
+CLOCK_REFRESH_S = 1.5
 FRAME_BATCH = 200
 
 
@@ -36,17 +40,31 @@ class Runner:
         self.uploads = uploads
         described = machine_description()
         self.machine = f"{described['platform']} · {os.cpu_count()} logical cpus"
+        self.session: str | None = None
+        self.reported: tuple[Any, ...] | None = None
+        self.reported_at = 0.0
+        # A finished game still holds the board — take backs and rematches need it — but it
+        # no longer holds the machine, so a queued experiment can have it.
+        self.occupied = False
 
     # ── the loop ───────────────────────────────────────────────────────────────────────────
 
     def serve(self, once: bool = False) -> None:
         while True:
-            job = self.claim()
-            if job is not None:
-                self.play(job)
+            # A sparring game and a batch cannot share this machine: the batch is measuring how
+            # long an engine takes, and a second game running beside it takes that time away.
+            # Whoever is already sitting at the board keeps it, and experiments wait.
+            self.attend()
+            if not self.occupied:
+                job = self.claim()
+                if job is not None:
+                    if self.session is not None:
+                        self.send(f"/api/play/{self.session}/state", {"status": "ended"})
+                        self.leave()
+                    self.play(job)
             if once:
                 return
-            time.sleep(POLL_S)
+            time.sleep(PLAY_POLL_S if self.session else POLL_S)
 
     def claim(self) -> dict[str, Any] | None:
         """Also the heartbeat, and how the site learns what this machine can play."""
@@ -56,6 +74,88 @@ class Runner:
         answer = self.source.json("/api/jobs/claim", "POST", body, "application/json")
         job: dict[str, Any] | None = answer.get("job")
         return job
+
+    # ── one person, one board ──────────────────────────────────────────────────────────────
+
+    def attend(self) -> None:
+        """Play the sparring game the site is holding, if there is one, and report the board."""
+        try:
+            answer = self.source.json(
+                "/api/play/claim",
+                "POST",
+                json.dumps({"runner": self.name}).encode(),
+                "application/json",
+            )
+        except ValueError as error:
+            print(f"could not ask for a game: {error}", flush=True)
+            return
+        session: dict[str, Any] | None = answer.get("play")
+        if session is None:
+            self.leave()
+            return
+        play_id = str(session["id"])
+        if play_id != self.session:
+            self.leave()
+            try:
+                self.lab.play_start(dict(session["request"]))
+            except (ValueError, OSError) as error:
+                print(f"could not start {play_id}: {error}", flush=True)
+                self.send(f"/api/play/{play_id}/state", {"status": "ended"})
+                return
+            self.session = play_id
+            self.occupied = True
+        command = session.get("command") or {}
+        try:
+            kind = str(command.get("kind", ""))
+            if kind == "move":
+                self.lab.play_move(str(command.get("uci", "")))
+            elif kind == "undo":
+                self.lab.play_undo()
+            elif kind == "resign":
+                self.lab.play_resign()
+            elif kind == "end":
+                self.leave()
+                self.send(f"/api/play/{play_id}/state", {"status": "ended"})
+                return
+        except ValueError as error:
+            # A refused move is the board's answer to it, not a reason to abandon the game.
+            print(f"{play_id}: {error}", flush=True)
+        self.report_board(play_id)
+
+    def report_board(self, play_id: str) -> None:
+        """Post the position, but only when it has moved on or the clocks have gone stale."""
+        state = self.lab.play_state()
+        if state is None:
+            self.session = None
+            self.send(f"/api/play/{play_id}/state", {"status": "ended"})
+            return
+        moment = (
+            play_id,
+            state["status"],
+            len(state["frames"]),
+            state["thinking"],
+            state["your_turn"],
+            state["result"],
+        )
+        if moment == self.reported and time.monotonic() - self.reported_at < CLOCK_REFRESH_S:
+            return
+        self.reported, self.reported_at = moment, time.monotonic()
+        # "over" is the game being finished, not the board being gone: the session stays here so
+        # the person can take the last move back or look at the position.
+        finished = state["status"] == "finished"
+        self.occupied = not finished
+        self.send(
+            f"/api/play/{play_id}/state",
+            {"state": state, "status": "over" if finished else "live"},
+        )
+
+    def leave(self) -> None:
+        if self.session is not None:
+            print(f"leaving {self.session}", flush=True)
+        self.session = None
+        self.reported = None
+        self.occupied = False
+        self.lab.play_end()
 
     def play(self, job: dict[str, Any]) -> None:
         run_id = str(job["run_id"])

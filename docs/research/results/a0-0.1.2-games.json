@@ -1,0 +1,223 @@
+{
+  "version": "0.1.2",
+  "runs": [
+    {
+      "id": "20260910-113138-88a17f",
+      "label": "A0 0.1.2 vs frozen A0 0.1.0",
+      "limits": {
+        "base_ms": 5000,
+        "increment_ms": 50,
+        "ply_cap": 600,
+        "seed": 20260910
+      },
+      "summary": [
+        {
+          "opponent": "a0-001",
+          "games": 20,
+          "scheduled": 20,
+          "wins": 14,
+          "draws": 3,
+          "losses": 3,
+          "candidate_failures": 0,
+          "void": 0,
+          "pairs": 10,
+          "score": 0.775,
+          "interval": [
+            0.34553059165326244,
+            1
+          ],
+          "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+          "families": 5
+        }
+      ],
+      "verified_games": 20,
+      "terminations": {
+        "insufficient_material": 2,
+        "flag": 1,
+        "checkmate": 17
+      }
+    },
+    {
+      "id": "20260910-113633-e6f1c7",
+      "label": "A0 0.1.2 diverse opponent check",
+      "limits": {
+        "base_ms": 5000,
+        "increment_ms": 50,
+        "ply_cap": 600,
+        "seed": 20260910
+      },
+      "summary": [
+        {
+          "opponent": "stockfish",
+          "games": 6,
+          "scheduled": 6,
+          "wins": 0,
+          "draws": 0,
+          "losses": 6,
+          "candidate_failures": 0,
+          "void": 0,
+          "pairs": 3,
+          "score": 0.0,
+          "interval": [
+            0,
+            0.7841002756996854
+          ],
+          "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+          "families": 3
+        },
+        {
+          "opponent": "positional",
+          "games": 6,
+          "scheduled": 6,
+          "wins": 6,
+          "draws": 0,
+          "losses": 0,
+          "candidate_failures": 0,
+          "void": 0,
+          "pairs": 3,
+          "score": 1.0,
+          "interval": [
+            0.21589972430031457,
+            1
+          ],
+          "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+          "families": 3
+        },
+        {
+          "opponent": "tactical",
+          "games": 6,
+          "scheduled": 6,
+          "wins": 6,
+          "draws": 0,
+          "losses": 0,
+          "candidate_failures": 0,
+          "void": 0,
+          "pairs": 3,
+          "score": 1.0,
+          "interval": [
+            0.21589972430031457,
+            1
+          ],
+          "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+          "families": 3
+        },
+        {
+          "opponent": "rollout",
+          "games": 6,
+          "scheduled": 6,
+          "wins": 6,
+          "draws": 0,
+          "losses": 0,
+          "candidate_failures": 0,
+          "void": 0,
+          "pairs": 3,
+          "score": 1.0,
+          "interval": [
+            0.21589972430031457,
+            1
+          ],
+          "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+          "families": 3
+        }
+      ],
+      "verified_games": 24,
+      "terminations": {
+        "checkmate": 24
+      }
+    },
+    {
+      "id": "20260910-162656-a1bc17",
+      "label": "A0 0.1.2 supplied-game clock regression",
+      "limits": {
+        "base_ms": 10000,
+        "increment_ms": 100,
+        "ply_cap": 600,
+        "seed": 42
+      },
+      "summary": [
+        {
+          "opponent": "solid",
+          "games": 8,
+          "scheduled": 8,
+          "wins": 8,
+          "draws": 0,
+          "losses": 0,
+          "candidate_failures": 0,
+          "void": 0,
+          "pairs": 4,
+          "score": 1.0,
+          "interval": [
+            0.3209492421296902,
+            1
+          ],
+          "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+          "families": 2
+        }
+      ],
+      "verified_games": 8,
+      "terminations": {
+        "checkmate": 8
+      }
+    }
+  ],
+  "supplied_data_followup": {
+    "old_run": "20260910-111002-497d4d",
+    "old_subset": [
+      {
+        "opponent": "solid",
+        "games": 8,
+        "scheduled": 8,
+        "wins": 4,
+        "draws": 2,
+        "losses": 2,
+        "candidate_failures": 4,
+        "void": 0,
+        "pairs": 4,
+        "score": 0.625,
+        "interval": [
+          0,
+          1
+        ],
+        "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+        "families": 2
+      }
+    ],
+    "same_opponent_build_fens_pair_seeds_and_clock": true
+  },
+  "package": {
+    "sha256": "14da2ee6d089c95697e59d00f754bc25efd6f02076c12a63ff38d195c6d2c071",
+    "zipped_bytes": 12044,
+    "unzipped_bytes": 35070,
+    "files": {
+      "agent.py": "b4db36fbe2f49bb7fa03d9cbe31a7685d08e1cc2054ea8ea1dbcc9903f9a6b12",
+      "a0/__init__.py": "2cd4b94de800a6ede37e12f7802b77b1e555531b691eebfcc8de665a06755439",
+      "a0/engine.py": "6fa1b27f4eef665c2d63bf9179bde51bd3b04ce0f1e4257d819ca084ca898d03",
+      "a0/evaluation.py": "87188241d5d0e8343691081edf391542515f5efd67e356d0942d18c7a086bd7a",
+      "a0/README.md": "47793821761c5eb59389ea566cdb9f11e9fbd1d2f09f2714dace4049db6802a2",
+      "a0/search.py": "950efdac817f159ba6d446aaee80c9239d0b780ed5e1e67bf1c1ce16d4964508"
+    },
+    "smoke_exit_code": 0
+  },
+  "validation": {
+    "unittest_count": 102,
+    "unittest_result": "passed",
+    "ruff": "passed",
+    "mypy_source_files": 39,
+    "mypy": "passed",
+    "arena_gate_games": 2,
+    "arena_gate_result": "2 checkmate wins",
+    "package_smoke_games": 2,
+    "package_smoke_result": "passed",
+    "browser": {
+      "boardSquares": 64,
+      "replay": true,
+      "flip": true,
+      "regressionRow": "Solid search\nLab alpha-beta\n\t8 / 0 / 0\t4\t100.0%\t32\u00e2\u20ac\u201c100%\t0",
+      "historicalFailures": "4",
+      "historicalFailureTitle": "Candidate clock, crash, illegal move or init failures, including draws and void games",
+      "mobileOverflow": false,
+      "errors": []
+    },
+    "test_log_sha256": "b152205c956beb416fe8baa3bc0d8666b711a7161590330c68650f9e545ac0f7"
+  }
+}

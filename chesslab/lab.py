@@ -78,8 +78,12 @@ def machine_description(timeout: float = 4.0) -> dict[str, str]:
     worker = threading.Thread(target=probe, name="chesslab-platform", daemon=True)
     worker.start()
     worker.join(timeout)
+    # A name for the operating system is still worth having when the detailed probe times out;
+    # it is what a result and a runner are labelled with, and sys.platform never blocks.
+    names = {"win32": "Windows", "darwin": "macOS", "linux": "Linux"}
+    named = names.get(sys.platform, sys.platform)
     _MACHINE = {
-        "platform": found.get("platform", f"{sys.platform} (description unavailable)"),
+        "platform": found.get("platform", f"{named} (version not read)"),
         "processor": found.get("processor", ""),
         "machine": found.get("machine", os.environ.get("PROCESSOR_ARCHITECTURE", "")),
         "host": found.get("host", socket.gethostname()),
@@ -633,6 +637,9 @@ class Lab:
         if not path.exists():
             raise ValueError("Experiment not found")
         data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        # Old exports counted only losses as failures, missing flags scored as draws.
+        # Refresh derived values on read without changing the recorded match evidence.
+        data["summary"] = summarise(data["games"], data["candidate"])
         return data
 
     def state(self, run_id: str | None = None) -> dict[str, Any]:

@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "source_directory": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\a0-0.1.2-qmoves-clock\\.chesslab\\runs\\20260910-162656-a1bc17",
+  "run_id": "20260910-162656-a1bc17",
+  "status": "completed",
+  "limits": {
+    "base_ms": 10000,
+    "increment_ms": 100,
+    "ply_cap": 600,
+    "seed": 42
+  },
+  "scheduled": 8,
+  "statuses": {
+    "completed": 8
+  },
+  "verified_games": 8,
+  "verified_accepted_plies": 486,
+  "combined_pgn_verified": false,
+  "source_hashes": {
+    "manifest.json": "df77c61372b37e76b4a4cdcbb6e10328c47c80b30e963dbdb42fe68e77214546",
+    "games/g00001.json": "8441e21556867561bdd8bf1cfc53d3db95579daedc884bac61d0e99d4ef70efb",
+    "games/g00002.json": "fb50754d44c42751562b1905bc6986b4fb0f1a31bfb349899604108f6c685d37",
+    "games/g00003.json": "579e9d87408ea381e3f2557f31db95039c20a1af726326404e7c0fc3c3f3116a",
+    "games/g00004.json": "1088a0591a1b620a0e0a74b5d416fd5b431561c6f75f96d6884a386bb00b7f7c",
+    "games/g00005.json": "1ad34a2b198ac0d75217d64d3c0f87ae4a1632ca09dbf50e5a22e0d540f5fc14",
+    "games/g00006.json": "30ca3b06cb0bbd4f96ecb4aa900484de20e3049ca725c33b1b77d5d440cdb09b",
+    "games/g00007.json": "10bd84e860ef00de4ffe44ee11be07ecd8638fb10edde35ba26ded9dd290ad76",
+    "games/g00008.json": "87066323831245869cc033845d2c2cfc6fe5190098626ac5d4f614adf36a8cfc"
+  },
+  "recorded_candidate_build": {
+    "id": "candidate",
+    "name": "A0 \u00b7 working build",
+    "family": "Original A0 alpha-beta",
+    "kind": "python",
+    "path": ".",
+    "description": "Our original classical engine: PVS, incremental evaluation and clock control",
+    "command": [],
+    "options": {},
+    "env": {},
+    "requires": [],
+    "includes": [
+      "weights"
+    ],
+    "assets": [],
+    "max_move_ms": null,
+    "frozen_path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\a0-0.1.2-qmoves-clock\\.chesslab\\runs\\20260910-162656-a1bc17\\builds\\candidate",
+    "files": {
+      "agent.py": "b4db36fbe2f49bb7fa03d9cbe31a7685d08e1cc2054ea8ea1dbcc9903f9a6b12",
+      "a0/__init__.py": "2cd4b94de800a6ede37e12f7802b77b1e555531b691eebfcc8de665a06755439",
+      "a0/engine.py": "6fa1b27f4eef665c2d63bf9179bde51bd3b04ce0f1e4257d819ca084ca898d03",
+      "a0/evaluation.py": "87188241d5d0e8343691081edf391542515f5efd67e356d0942d18c7a086bd7a",
+      "a0/README.md": "d83636fd7cfcbe5a0c6fb731df0128ccaea956fdf7358d7659c0b96733c8fce4",
+      "a0/search.py": "950efdac817f159ba6d446aaee80c9239d0b780ed5e1e67bf1c1ce16d4964508"
+    },
+    "sha256": "ba0d92bb88642d2552a5496b5ffbf6effe7d87efb65143b5b4eeb9c47884955c"
+  },
+  "logged_versions": {
+    "A0 0.1.2": 245
+  },
+  "original_summary": [
+    {
+      "opponent": "solid",
+      "games": 8,
+      "scheduled": 8,
+      "wins": 8,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 4,
+      "score": 1.0,
+      "interval": [
+        0.3209492421296902,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 2
+    }
+  ],
+  "corrected_summary": [
+    {
+      "opponent": "solid",
+      "games": 8,
+      "scheduled": 8,
+      "wins": 8,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 4,
+      "score": 1.0,
+      "interval": [
+        0.3209492421296902,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 2
+    }
+  ],
+  "nonwins": [],
+  "retained_telemetry": {
+    "solid": {
+      "rows": 245,
+      "depth_counts": {
+        "4": 34,
+        "3": 120,
+        "2": 68,
+        "1": 18,
+        "5": 5
+      },
+      "median_depth": 3,
+      "quiescence_node_fraction": 0.9050430738377279
+    }
+  },
+  "limitations": [
+    "Interrupted or queued games are unscored; this is not a complete league.",
+    "Log telemetry is truncated and is not an unbiased sample of all moves.",
+    "Replay verifies recorded legal moves/results, not execution or wall-clock accuracy.",
+    "Build hashes identify the declared build; no engine paths or commands were executed."
+  ]
+}

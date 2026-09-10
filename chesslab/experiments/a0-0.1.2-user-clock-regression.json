@@ -1,0 +1,10 @@
+{
+  "label": "A0 0.1.2 supplied-game clock regression",
+  "candidate": "candidate",
+  "opponents": ["solid"],
+  "openings": ["winawer", "alapin", "tarrasch", "najdorf"],
+  "base_ms": 10000,
+  "increment_ms": 100,
+  "ply_cap": 600,
+  "seed": 42
+}

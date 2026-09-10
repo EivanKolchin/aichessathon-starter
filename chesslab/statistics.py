@@ -7,6 +7,24 @@ from typing import Any
 from harness.referee import FAILED_TERMINATIONS
 
 
+def candidate_failed(game: dict[str, Any], candidate: str) -> bool:
+    """Count protocol/clock failures even when the referee awards a draw or void."""
+    if game["status"] != "completed" or game["termination"] not in FAILED_TERMINATIONS:
+        return False
+    if game["termination"] == "both_failed":
+        return True
+    if game["result"] in {"white", "black"}:
+        return bool(game[game["result"]] != candidate)
+    if game["termination"] == "flag" and game["result"] == "draw":
+        # The rejected move is absent from the PGN. Recover whose turn it was from
+        # the opening side and the number of accepted plies, including black starts.
+        white_to_move = game["opening"]["fen"].split()[1] == "w"
+        if game["plies"] % 2:
+            white_to_move = not white_to_move
+        return bool(game["white" if white_to_move else "black"] == candidate)
+    return False
+
+
 def summarise(games: list[dict[str, Any]], candidate: str) -> list[dict[str, Any]]:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for game in games:
@@ -16,13 +34,13 @@ def summarise(games: list[dict[str, Any]], candidate: str) -> list[dict[str, Any
         completed = [g for g in scheduled if g["status"] == "completed"]
         scored = [g for g in completed if g["result"] != "void"]
         scores: dict[str, list[float]] = defaultdict(list)
-        wins = draws = losses = failures = 0
+        wins = draws = losses = 0
+        failures = sum(candidate_failed(game, candidate) for game in completed)
         for game in scored:
             score = 0.5 if game["result"] == "draw" else float(game[game["result"]] == candidate)
             wins += score == 1
             draws += score == 0.5
             losses += score == 0
-            failures += game["termination"] in FAILED_TERMINATIONS and score == 0
             scores[game["pair_id"]].append(score)
         pairs = [sum(values) / 2 for values in scores.values() if len(values) == 2]
         mean = sum(pairs) / len(pairs) if pairs else None

@@ -107,6 +107,8 @@ not a Stockfish-strength engine.
 
 The first measured results, evidence paths and next experiment are recorded in
 [`docs/research/a0-results.md`](../docs/research/a0-results.md).
+The 0.1.2 optimisation, clock regression and follow-up games are documented in
+[`docs/research/a0-0.1.2-results.md`](../docs/research/a0-0.1.2-results.md).
 
 To compare changes against a frozen original build:
 
