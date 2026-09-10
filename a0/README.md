@@ -1,9 +1,10 @@
 # A0 — original classical baseline
 
-The working version is 0.1.1. Version 0.1.0 remains a frozen reference in Chess Lab.
+The working version is 0.1.2. Version 0.1.0 remains a frozen reference in Chess Lab.
 The 0.1.1 change restricts quiet-promotion generation to pawns on the promotion rank and empty
 destination squares. Captures retain their original order, and checked positions still search
-all legal evasions. Search settings, evaluation and clock allocation are unchanged.
+all legal evasions. Version 0.1.2 also uses a precise clock, checks every node under short
+deadlines, and reserves more time for the referee/protocol. Evaluation and search policy are unchanged.
 
 A0 supplies the first original engine behind the root `agent.py` contract. It is a correctness
 and measurement reference for later evaluator training and search optimisation. It uses the
@@ -49,7 +50,8 @@ from successive supplied clocks and measured move time rather than assuming ever
 the competition increment. At 60 ms or less it returns a legal emergency move without a search.
 There is no pondering, network access, external process invocation or environment seed input.
 
-Deadline checks occur between root moves and every 32 visited nodes. This is cooperative timing,
+Deadline checks use `perf_counter`, between root moves and every 32 visited nodes, or every node
+for budgets below 250 ms. A0 reserves 30–100 ms for overhead. This is cooperative timing,
 not a real-time operating-system guarantee. The tests exercise low clocks and the event harness
 supplies the actual loss-on-flag adjudication.
 

@@ -1,11 +1,15 @@
+import io
 import tempfile
 import time
 import unittest
+import unittest.mock
+import zipfile
 from pathlib import Path
 from typing import Any
 
 import chess
 
+from chesslab import builds
 from chesslab.lab import Lab
 from chesslab.registry import EngineSpec, write_json
 from chesslab.sparring import adjudicate
@@ -325,6 +329,99 @@ class RegistrationTests(unittest.TestCase):
         self.lab.play_end()
         self.assertNotIn("newcomer", {e["id"] for e in self.lab.forget("newcomer")["engines"]})
 
+
+class AdoptionTests(unittest.TestCase):
+    """Dropping a folder in. The payload is the zip the browser builds from what was dropped."""
+
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.directory = Path(self.temporary.name)
+        self.registry = self.directory / "engines.json"
+        self.lab = Lab(self.directory / "runs", self.registry)
+
+    def tearDown(self) -> None:
+        self.lab.close()
+        self.temporary.cleanup()
+
+    def zip_of(self, files: dict[str, bytes | str]) -> bytes:
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            for name, body in files.items():
+                archive.writestr(name, body)
+        return buffer.getvalue()
+
+    def drop(self, files: dict[str, bytes | str] | None = None, **fields: str) -> dict[str, Any]:
+        request = {"name": "Dropped agent", "family": "Bench"}
+        request.update(fields)
+        payload = self.zip_of({"agent.py": NEWCOMER} if files is None else files)
+        return self.lab.adopt(payload, request)
+
+    def test_a_dropped_agent_is_checked_then_registered(self) -> None:
+        result = self.drop(notes="From the browser")
+        self.assertRegex(result["report"], r"^Started and played \w+ in [\d,]+ ms$")
+        self.assertEqual(result["engine"]["id"], "dropped-agent")
+        self.assertEqual(result["engine"]["description"], "From the browser")
+        added = next(e for e in result["catalog"]["engines"] if e["id"] == "dropped-agent")
+        self.assertTrue(added["available"])
+        self.assertTrue(added["custom"])
+        self.assertEqual(added["requires"], ["chess"])
+        self.assertTrue((self.lab.agents_dir / "dropped-agent" / "agent.py").is_file())
+        # It is a real opponent now: it can be played.
+        self.lab.play_start({"engine": "dropped-agent", "colour": "white", "base_ms": 2000})
+        self.assertIsNotNone(self.lab.play_state())
+        self.lab.play_end()
+
+    def test_removing_it_takes_the_unpacked_files_with_it(self) -> None:
+        self.drop()
+        directory = self.lab.agents_dir / "dropped-agent"
+        self.assertTrue(directory.is_dir())
+        self.lab.forget("dropped-agent")
+        self.assertFalse(directory.exists())
+
+    def test_a_second_drop_replaces_the_first(self) -> None:
+        self.drop()
+        self.drop({"agent.py": NEWCOMER, "notes.txt": "second"})
+        self.assertTrue((self.lab.agents_dir / "dropped-agent" / "notes.txt").is_file())
+        matches = [e for e in self.lab.catalog()["engines"] if e["id"] == "dropped-agent"]
+        self.assertEqual(len(matches), 1)
+        self.assertIn("notes.txt", matches[0]["includes"])
+
+    def test_a_build_that_cannot_play_is_refused_and_leaves_nothing_behind(self) -> None:
+        cases: dict[str, dict[str, bytes | str]] = {
+            "no agent.py": {"engine.py": NEWCOMER},
+            "nested in a folder": {"my-agent/agent.py": NEWCOMER},
+            "escapes the directory": {"../agent.py": NEWCOMER},
+            "a native binary": {"agent.py": NEWCOMER, "fast.pyd": b"MZ binary"},
+            "a binary in disguise": {"agent.py": NEWCOMER, "weights.bin": b"\x7fELF and more"},
+            "no get_move": {"agent.py": "value = 1\n"},
+            "raises on import": {"agent.py": 'raise RuntimeError("boom on import")\n'},
+            "answers nonsense": {"agent.py": "def get_move(fen, ms):\n    return 'hello'\n"},
+            "plays an illegal move": {"agent.py": "def get_move(fen, ms):\n    return 'a1a8'\n"},
+        }
+        for label, files in cases.items():
+            with self.subTest(case=label), self.assertRaises(ValueError):
+                self.drop(files)
+            self.assertFalse((self.lab.agents_dir / "dropped-agent").exists(), label)
+            self.assertEqual([e for e in self.lab.catalog()["engines"] if e["custom"]], [])
+
+    def test_the_reason_a_build_failed_reaches_the_person_who_dropped_it(self) -> None:
+        with self.assertRaises(ValueError) as caught:
+            self.drop({"agent.py": 'raise RuntimeError("boom on import")\n'})
+        self.assertIn("boom on import", str(caught.exception))
+
+    def test_a_build_needing_packages_this_lab_lacks_is_kept_but_flagged(self) -> None:
+        source = "import tensorflow\n\n\ndef get_move(fen, ms):\n    return 'e2e4'\n"
+        with unittest.mock.patch.object(builds, "PLATFORM_PACKAGES", frozenset({"tensorflow"})):
+            result = self.drop({"agent.py": source})
+        self.assertIn("not playable here yet", result["report"])
+        added = next(e for e in result["catalog"]["engines"] if e["id"] == "dropped-agent")
+        self.assertFalse(added["available"])
+        self.assertEqual(added["requires"], ["tensorflow"])
+
+    def test_names_without_a_usable_id_are_refused(self) -> None:
+        for name in ("", "   ", "!!!"):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                self.drop(name=name)
 
 if __name__ == "__main__":
     unittest.main()

@@ -18,12 +18,16 @@ When you like it, `make zip` and drop `submission.zip` on your dashboard.
 
 The local [Chess Lab](chesslab/README.md) adds a live board, replays, diverse opponent pools,
 paired experiments, build snapshots and downloadable results around the existing referee. **Play
-the engine** puts you across the board from any registered build, and **Engine registry → Add an
-agent** registers a new checkpoint without leaving the browser.
+the engine** puts you across the board from any registered build, and Dropping a folder, an
+`agent.py` or a zip onto the page checks it the way the platform would and registers it.
 
 ```powershell
 .venv\Scripts\python.exe -m chesslab serve
 ```
+
+`python -m chesslab runner --url ...` offers this machine to the shared
+[ladder](ladder/README.md), which queues experiments from a website and shows the games as they
+are played here.
 
 Open http://127.0.0.1:8765. See the lab guide for minimal setup, adding UCI engines and Python
 checkpoints, headless runs and matched comparisons. Research tools do not enter the submission.

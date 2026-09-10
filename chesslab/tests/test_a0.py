@@ -3,6 +3,8 @@
 import random
 import time
 import unittest
+from itertools import count
+from unittest.mock import patch
 
 import chess
 
@@ -77,6 +79,17 @@ class EvaluationTests(unittest.TestCase):
 
 
 class SearchTests(unittest.TestCase):
+    def test_deadline_uses_precise_clock_even_if_monotonic_does_not_tick(self) -> None:
+        # Python 3.12 on this Windows host has a 15.625 ms monotonic tick. A frozen
+        # coarse clock must not hide a short search deadline; the node cap bounds a failure.
+        with (
+            patch("a0.search.time.monotonic", return_value=0.0),
+            patch("a0.search.time.perf_counter", side_effect=count(0.0, 0.001)),
+        ):
+            result = Search(SearchConfig(max_nodes=1000)).analyse(chess.Board(), 3, 5)
+        self.assertTrue(result.stopped)
+        self.assertLess(result.nodes, 10)
+
     def test_quiescence_move_set_and_order_against_full_legal_moves(self) -> None:
         # Independent oracle: filter the complete legal move stream, including en passant,
         # pins and all promotion choices. Keep captures before quiet promotions.
@@ -244,6 +257,16 @@ class SearchTests(unittest.TestCase):
 
 
 class AgentTests(unittest.TestCase):
+    def test_low_clock_budget_leaves_room_for_referee_tick_and_protocol(self) -> None:
+        clock = TimeControl()
+        clock.increment_estimate = 45
+        ending = chess.Board("8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61")
+        for remaining in range(61, 121):
+            budget = clock.allocate(remaining, ending)
+            # Covers the reproduced 62 ms flag boundary: a 15.625 ms referee tick
+            # plus small protocol overhead. It does not model arbitrary OS stalls.
+            self.assertLessEqual(budget.hard_ms + 20, remaining)
+
     def test_history_survives_opponent_moves(self) -> None:
         agent = ChessAgent(log=False)
         agent.search = Search(SearchConfig(max_depth=1))

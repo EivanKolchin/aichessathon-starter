@@ -60,7 +60,11 @@ function updateSetup() {
   $("pool-count").textContent = ids.length;
   $("diversity").textContent = `${ids.length} opponents · ${families.size} engine families`;
   $("opening-preview").textContent = [...new Set(openings.map((o) => o.family))].join(" · ");
-  $("game-count").textContent = `${ids.length * openings.length * 2} games`;
+  const total = ids.length * openings.length * 2, atOnce = Number($("parallel").value);
+  $("game-count").textContent = `${total} games`;
+  $("launch-note").textContent = atOnce > 1
+    ? `${atOnce} at once · clocks not comparable with the event` : "One at a time";
+  updateCompleteTest();
 }
 function renderOpponents() {
   const previous = catalog ? selectedOpponents() : [];
@@ -88,33 +92,48 @@ function piecesOf(fen) {
   });
   return pieces;
 }
-const displayColumn = (square) => flipped ? 7 - files.indexOf(square[0]) : files.indexOf(square[0]);
-const displayRow = (square) => flipped ? Number(square[1]) - 1 : 8 - Number(square[1]);
-// One ply, same game, same orientation: slide the piece that moved instead of cutting to the new position.
-function movePlan(previous) {
-  if (!game || !previous || previous.gameId !== game.id || previous.flipped !== flipped) return null;
+const PIECE_NAMES = {p:"pawn", n:"knight", b:"bishop", r:"rook", q:"queen", k:"king"};
+const columnOf = (square, flip) => flip ? 7 - files.indexOf(square[0]) : files.indexOf(square[0]);
+const rowOf = (square, flip) => flip ? Number(square[1]) - 1 : 8 - Number(square[1]);
+// The arena board and the game window draw from here, so there is one board renderer.
+function boardHtml(fen, uci, flip) {
+  const pieces = piecesOf(fen), last = [uci?.slice(0,2), uci?.slice(2,4)];
+  let html = "";
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const file = flip ? 7-col : col, rank = flip ? row+1 : 8-row;
+    const square = files[file] + rank, piece = pieces[square];
+    const alt = piece
+      ? `${piece === piece.toUpperCase() ? "White" : "Black"} ${PIECE_NAMES[piece.toLowerCase()]} on ${square}`
+      : "";
+    html += `<div class="square ${(file + rank) % 2 === 1 ? "dark" : ""} ${last.includes(square) ? "last" : ""}" data-square="${square}">${col === 0 ? `<span class="coordinate rank">${rank}</span>` : ""}${row === 7 ? `<span class="coordinate file">${files[file]}</span>` : ""}${piece ? `<img src="/pieces/${piece}.svg" alt="${alt}" draggable="false">` : ""}</div>`;
+  }
+  return html;
+}
+// One ply, same game, same orientation: slide the piece that moved instead of cutting across.
+function movePlan(frames, from, to, beforeFen, flip) {
+  if (!frames || from === null || from === to) return null;
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
-  const forward = frameIndex > previous.index;
-  const uci = forward ? game.frames[frameIndex]?.uci
-    : previous.index - frameIndex === 1 ? game.frames[previous.index]?.uci : null;
+  const forward = to > from;
+  const uci = forward ? frames[to]?.uci : from - to === 1 ? frames[from]?.uci : null;
   if (!uci || uci.length < 4) return null;
-  const from = uci.slice(0,2), to = uci.slice(2,4);
-  const before = piecesOf(previous.fen), start = forward ? from : to, mover = before[start];
+  const start = uci.slice(0,2), end = uci.slice(2,4);
+  const before = piecesOf(beforeFen), origin = forward ? start : end, mover = before[origin];
   if (!mover) return null;
-  const slides = [[start, forward ? to : from]], ghosts = [];
-  if (mover.toLowerCase() === "k" && Math.abs(files.indexOf(from[0]) - files.indexOf(to[0])) === 2) {
-    const rank = from[1], corner = (to[0] === "g" ? "h" : "a") + rank, landing = (to[0] === "g" ? "f" : "d") + rank;
+  const slides = [[origin, forward ? end : start]], ghosts = [];
+  if (mover.toLowerCase() === "k" && Math.abs(files.indexOf(start[0]) - files.indexOf(end[0])) === 2) {
+    const rank = start[1], corner = (end[0] === "g" ? "h" : "a") + rank;
+    const landing = (end[0] === "g" ? "f" : "d") + rank;
     slides.push(forward ? [corner, landing] : [landing, corner]);
   }
-  if (forward && before[to]) ghosts.push([to, before[to]]);
-  else if (forward && mover.toLowerCase() === "p" && from[0] !== to[0] && before[to[0] + from[1]]) {
-    ghosts.push([to[0] + from[1], before[to[0] + from[1]]]);       // the pawn taken en passant
+  if (forward && before[end]) ghosts.push([end, before[end]]);
+  else if (forward && mover.toLowerCase() === "p" && start[0] !== end[0] && before[end[0] + start[1]]) {
+    ghosts.push([end[0] + start[1], before[end[0] + start[1]]]);   // the pawn taken en passant
   }
-  return {slides, ghosts};
+  return {slides, ghosts, flip};
 }
 // Web Animations rather than a CSS transition: nothing is left stranded if a frame never lands.
-function animateMove(plan) {
-  const board = $("board"), size = board.getBoundingClientRect().width / 8;
+function animateMove(board, plan) {
+  const size = board.getBoundingClientRect().width / 8;
   if (!plan || !size || !board.animate) return;
   for (const [square, symbol] of plan.ghosts) {
     const ghost = document.createElement("img");
@@ -127,8 +146,8 @@ function animateMove(plan) {
   for (const [start, end] of plan.slides) {
     const square = board.querySelector(`[data-square="${end}"]`), piece = square?.querySelector("img");
     if (!piece) continue;
-    const dx = (displayColumn(start) - displayColumn(end)) * size;
-    const dy = (displayRow(start) - displayRow(end)) * size;
+    const dx = (columnOf(start, plan.flip) - columnOf(end, plan.flip)) * size;
+    const dy = (rowOf(start, plan.flip) - rowOf(end, plan.flip)) * size;
     square.classList.add("moving");
     const sliding = piece.animate([{transform:`translate(${dx}px, ${dy}px)`}, {transform:"none"}],
       {duration:190, easing:"cubic-bezier(.22, .61, .36, 1)"});
@@ -136,20 +155,28 @@ function animateMove(plan) {
     sliding.finished.then(settle, settle);
   }
 }
+function movesHtml(frames) {
+  const rows = new Map();
+  frames.slice(1).forEach((frame, index) => {
+    const before = frames[index].fen.split(" "), number = Number(before[5]);
+    if (!rows.has(number)) rows.set(number, {number});
+    rows.get(number)[before[1]] = {san:frame.san, index:index+1, ms:Math.round(frame.elapsed_ms)};
+  });
+  if (!rows.size) return '<p class="empty-moves">Waiting for the first move.</p>';
+  return [...rows.values()].map((row) => `<div class="move-row"><span class="move-number">${row.number}.</span>${["w","b"].map((side) => row[side]
+    ? `<button data-frame="${row[side].index}" title="Go to ${esc(row[side].san)} · ${row[side].ms} ms">${esc(row[side].san)}</button>`
+    : "<span></span>").join("")}</div>`).join("");
+}
 function renderBoard() {
-  const frame = currentFrame(), fen = frame.fen, pieces = piecesOf(fen);
-  const last = [frame.uci?.slice(0,2), frame.uci?.slice(2,4)];
-  let html = "";
-  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
-    const file = flipped ? 7-col : col, rank = flipped ? row+1 : 8-row;
-    const square = "abcdefgh"[file] + rank, piece = pieces[square];
-    html += `<div class="square ${(file + rank) % 2 === 1 ? "dark" : ""} ${last.includes(square) ? "last" : ""}" data-square="${square}">${col === 0 ? `<span class="coordinate rank">${rank}</span>` : ""}${row === 7 ? `<span class="coordinate file">${"abcdefgh"[file]}</span>` : ""}${piece ? `<img src="/pieces/${piece}.svg" alt="${piece === piece.toUpperCase() ? "White" : "Black"} ${{p:"pawn",n:"knight",b:"bishop",r:"rook",q:"queen",k:"king"}[piece.toLowerCase()]} on ${square}" draggable="false">` : ""}</div>`;
-  }
+  const frame = currentFrame(), fen = frame.fen;
   const boardKey = `${fen}:${frame.uci}:${flipped}`;
   if ($("board").dataset.key !== boardKey) {
-    const plan = movePlan(lastRender);
-    $("board").innerHTML = html; $("board").dataset.key = boardKey;
-    animateMove(plan);
+    const sameGame = lastRender && lastRender.gameId === game?.id && lastRender.flipped === flipped;
+    const plan = sameGame
+      ? movePlan(game.frames, lastRender.index, frameIndex, lastRender.fen, flipped) : null;
+    $("board").innerHTML = boardHtml(fen, frame.uci, flipped);
+    $("board").dataset.key = boardKey;
+    animateMove($("board"), plan);
   }
   lastRender = {gameId:game?.id, index:frameIndex, fen, flipped};
   renderSelection();
@@ -190,13 +217,7 @@ function renderGame() {
   $("download-pgn").disabled = !game.pgn;
   const key = `${game.id}:${game.frames.length}`;
   if (moveKey !== key) {
-    const rows = new Map();
-    game.frames.slice(1).forEach((frame, index) => {
-      const before = game.frames[index].fen.split(" "), number = Number(before[5]);
-      if (!rows.has(number)) rows.set(number, {number});
-      rows.get(number)[before[1]] = {san:frame.san,index:index+1};
-    });
-    $("moves").innerHTML = rows.size ? [...rows.values()].map((row) => `<div class="move-row"><span class="move-number">${row.number}.</span>${["w","b"].map((side) => row[side] ? `<button data-frame="${row[side].index}" title="Go to ${esc(row[side].san)}">${esc(row[side].san)}</button>` : "<span></span>").join("")}</div>`).join("") : '<p class="empty-moves">Waiting for the first move.</p>';
+    $("moves").innerHTML = movesHtml(game.frames);
     moveKey = key;
     if (following) $("moves").scrollTop = $("moves").scrollHeight;
     fadeWhenScrollable($("moves"));
@@ -222,8 +243,16 @@ function renderRun() {
   $("run-status").textContent = run.status;
   $("run-status").className = `status ${run.status}`;
   const completed = run.games.filter((g) => g.status === "completed").length;
-  $("run-progress").textContent = `${completed} / ${run.games.length} games · ${run.limits.base_ms/1000}s + ${run.limits.increment_ms/1000}s`;
+  const atOnce = run.environment?.parallel_games || 1;
+  $("run-progress").textContent = `${completed} / ${run.games.length} games · ${run.limits.base_ms/1000}s + ${run.limits.increment_ms/1000}s`
+    + (atOnce > 1 ? ` · ${atOnce} at once` : "");
+  $("run-eta").textContent = ["running","stopping"].includes(run.status) ? progressNote(run) : "";
   const active = ["running","preparing","stopping"].includes(run.status);
+  // Anything left unplayed can be picked up again, whether it was stopped or cut off.
+  const left = run.games.filter((g) => g.status !== "completed").length;
+  $("resume").hidden = active || !left;
+  $("resume").disabled = Boolean(play);
+  $("resume-count").textContent = left ? ` ${left} game${left === 1 ? "" : "s"}` : "";
   $("stop").hidden = !active;
   $("stop").disabled = run.status === "stopping";
   $("stop").textContent = run.status === "stopping" ? "Finishing current game…" : "Stop after this game";
@@ -240,6 +269,7 @@ function renderRun() {
   $("results-body").innerHTML = summaries.map((row) => `<tr><td><strong>${esc(engine(row.opponent).name)}</strong><small>${esc(engine(row.opponent).family)}</small></td><td>${row.wins} / ${row.draws} / ${row.losses}</td><td>${row.pairs}</td><td class="score-value">${pct(row.score)}</td><td title="${esc(row.interval_method)}">${row.interval ? `${Math.round(row.interval[0]*100)}–${Math.round(row.interval[1]*100)}%` : "—"}</td><td class="${row.candidate_failures ? "failure-count" : ""}" title="Candidate losses to clock, crash, illegal move or init failure">${row.candidate_failures}${row.void ? ` (+${row.void} void)` : ""}</td></tr>`).join("");
   const families = new Set(summaries.map((r) => engine(r.opponent).family));
   $("coverage-count").textContent = `${summaries.length} OPPONENTS / ${families.size} FAMILIES`;
+  $("contention").hidden = atOnce < 2;
   $("stats-note").textContent = "Pair score uses complete colour pairs; W/D/L includes unpaired games. The conservative 95% bound assumes independent opening pairs. Public development positions can be correlated. Treat these as exploratory results." + (run.limits.ply_cap < 600 ? " Shortened games: use full games to assess strength." : "");
   $("game-map").innerHTML = run.games.map((g,i) => `<button class="${mapClass(g)} ${g.id === gameId ? "selected" : ""}" data-game="${g.id}" aria-label="Game ${i+1}: ${esc(engine(g.opponent).name)}, ${esc(g.opening.name)}, ${esc(outcomeText(g))}" title="${i+1}. ${esc(engine(g.opponent).name)} / ${esc(g.opening.name)} / ${esc(outcomeText(g))}">${g.status === "completed" && failureNames.has(g.termination) ? "!" : ""}</button>`).join("");
 }
@@ -273,8 +303,10 @@ async function poll() {
     if (run) {
       runId = run.id; $("history").value = runId;
       document.querySelectorAll(".experiment-item").forEach((item) => { item.classList.toggle("selected",item.dataset.run === runId); item.setAttribute("aria-current",String(item.dataset.run === runId)); });
-      const live = run.games.find((g) => g.status === "running");
-      if (following && live) gameId = live.id;
+      const live = run.games.filter((g) => g.status === "running");
+      const chosen = live.find((g) => g.id === preferredLive) || live[0];
+      if (following && chosen) gameId = chosen.id;
+      renderLiveMatches(run);
       if (!gameId || !run.games.some((g) => g.id === gameId)) gameId = run.games[0].id;
       const detail = await api(`/api/game?run=${encodeURIComponent(runId)}&game=${encodeURIComponent(gameId)}`);
       if (revision !== selectionRevision) return;
@@ -314,12 +346,7 @@ function applyCatalog(next) {
   if (catalog.engines.some((e) => e.id === candidate && e.available)) $("candidate").value = candidate;
   renderPlayOptions();
 }
-function showEngineForm(open) {
-  $("engine-form").hidden = !open;
-  $("show-add-engine").hidden = open;
-  $("engine-error").hidden = true;
-  if (open) $("engine-name").focus();
-}
+
 function syncEngineKind() {
   const uci = engineKind() === "uci";
   $("engine-path-field").hidden = uci;
@@ -331,16 +358,15 @@ function syncEngineKind() {
     ? "The executable has to be on PATH or given as a full path. External engines are for research only."
     : "Paths are relative to the repository root. The folder needs an <code>agent.py</code> exposing <code>get_move</code>.";
 }
-function openRegistry(addNow) {
+function openRegistry(paths) {
   clearError();
   if (!$("registry-dialog").open) $("registry-dialog").showModal();
-  showEngineForm(Boolean(addNow));
+  if (paths) $("registry-dialog").querySelector(".path-form").open = true;
 }
 function bindRegistry() {
+  bindDrop();
   $("open-registry").addEventListener("click", () => openRegistry(false));
-  $("show-add-engine").addEventListener("click", () => showEngineForm(true));
-  $("cancel-add-engine").addEventListener("click", () => showEngineForm(false));
-  $("add-from-setup").addEventListener("click", () => { $("setup-dialog").close(); openRegistry(true); });
+  $("add-from-setup").addEventListener("click", () => { $("setup-dialog").close(); openRegistry(false); });
   for (const input of document.querySelectorAll("input[name=engine-kind]")) {
     input.addEventListener("change", syncEngineKind);
   }
@@ -380,13 +406,463 @@ function bindRegistry() {
       $("engine-form").reset();
       delete $("engine-id").dataset.edited;
       syncEngineKind();
-      showEngineForm(false);
+      $("registry-dialog").querySelector(".path-form").open = false;
     } catch (error) {
       $("engine-error").textContent = error.message || String(error);
       $("engine-error").hidden = false;
     } finally { $("engine-save").disabled = false; }
   });
   syncEngineKind();
+}
+
+// ── Running many games at once ────────────────────────────────────────────────────────────
+// Above one game at a time the machine is shared, so nothing here pretends the clocks still
+// compare with the event; the run records what it actually did and the results say so.
+let preferredLive = "", dataView = false;
+
+const availableOpponents = () =>
+  (catalog?.engines || []).filter((e) => e.available && e.id !== $("candidate").value);
+const splitOpenings = () =>
+  (catalog?.openings || []).filter((o) => o.split === $("split").value);
+
+function updateCompleteTest() {
+  const games = availableOpponents().length * splitOpenings().length * 2;
+  $("complete-count").textContent = games ? ` · ${games} games` : "";
+  $("complete-test").disabled = !games;
+  $("complete-test").title = games
+    ? `Every ready opponent against every ${$("split").value} position, both colours`
+    : "No opponents are ready";
+}
+function applyCompleteTest() {
+  document.querySelectorAll("#opponents input:not(:disabled)").forEach((box) => box.checked = true);
+  $("opening-count").value = "all";
+  $("clock-preset").value = "smoke";
+  $("clock-preset").dispatchEvent(new Event("change"));
+  $("ply-cap").value = "600";                 // full games; the clock is what makes it quick
+  $("parallel").value = "4";
+  $("label").value = `Complete test · ${$("split").value}`;
+  updateSetup();
+}
+function setDataView(on) {
+  dataView = on;
+  document.body.classList.toggle("data-mode", on);
+  $("data-view").textContent = on ? "Board view" : "Data view";
+  $("data-view").setAttribute("aria-pressed", String(on));
+}
+// A rate from the games that have finished beats a guess made before the batch started.
+function progressNote(runNow) {
+  const done = runNow.games.filter((g) => g.status === "completed");
+  const left = runNow.games.length - done.length;
+  if (!left) return "";
+  const stamps = done.map((g) => g.finished_at).filter(Boolean);
+  if (stamps.length < 2) return "";
+  const first = runNow.games.map((g) => g.started_at).filter(Boolean).sort()[0];
+  const elapsed = Math.max(...stamps) - (first ?? runNow.created_at);
+  if (!(elapsed > 0)) return "";
+  const remaining = (elapsed / done.length) * left;
+  return `about ${remaining < 90 ? `${Math.ceil(remaining)}s` : `${Math.ceil(remaining / 60)} min`} left`;
+}
+function renderLiveMatches(runNow) {
+  const live = runNow.games.filter((game) => game.status === "running");
+  $("live-matches").hidden = live.length < 2 || dataView;
+  if (live.length < 2) return;
+  $("live-matches").innerHTML = live.map((game) => {
+    const watching = game.id === gameId;
+    return `<button type="button" class="live-chip ${watching ? "selected" : ""}" data-live="${esc(game.id)}" aria-pressed="${watching}"><strong>${esc(engine(game.opponent).name)}</strong><small>${esc(game.opening.name)} · ${game.white === runNow.candidate ? "candidate white" : "candidate black"}</small></button>`;
+  }).join("");
+}
+function bindSweep() {
+  $("complete-test").addEventListener("click", applyCompleteTest);
+  $("data-view").addEventListener("click", () => setDataView(!dataView));
+  for (const id of ["candidate", "split"]) $(id).addEventListener("change", updateCompleteTest);
+  $("live-matches").addEventListener("click", (event) => {
+    const chip = event.target.closest("button[data-live]");
+    if (!chip) return;
+    preferredLive = chip.dataset.live;
+    gameId = preferredLive;
+    following = true;
+    moveKey = "";
+    poll();
+  });
+}
+
+// ── One game, opened on its own ───────────────────────────────────────────────────────────
+// The game map opens a game here rather than taking over the arena, so a live batch keeps
+// running and keeps showing the game it is playing while you read an older one.
+let detail = null, detailIndex = 0, detailFlip = false, detailTimer = null, detailShown = null;
+
+const seconds = (ms) => ms >= 10000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.round(ms)} ms`;
+function sideTiming(frames) {
+  const sides = {w:[], b:[]};
+  frames.slice(1).forEach((frame, index) => sides[frames[index].fen.split(" ")[1]]?.push(frame));
+  const stat = (list) => list.length
+    ? {
+        moves: list.length,
+        total: list.reduce((sum, frame) => sum + frame.elapsed_ms, 0),
+        slowest: list.reduce((worst, frame) => frame.elapsed_ms > worst.elapsed_ms ? frame : worst),
+      }
+    : {moves:0, total:0, slowest:null};
+  return {white: stat(sides.w), black: stat(sides.b)};
+}
+function factRow(term, value) {
+  return `<div><dt>${esc(term)}</dt><dd>${value}</dd></div>`;
+}
+function renderFacts() {
+  const timing = sideTiming(detail.frames), limits = run?.limits;
+  const rows = [
+    factRow("Opening", `${esc(detail.opening.name)}<small>${esc(detail.opening.family)} · ${esc(detail.opening.split)} split</small>`),
+    factRow("Moves", `${detail.frames.length - 1} plies<small>${detail.status === "completed" ? esc(String(detail.termination).replaceAll("_", " ")) : esc(detail.status)}</small>`),
+  ];
+  for (const side of ["white", "black"]) {
+    const spec = engine(detail[side]), spent = timing[side];
+    const badge = detail[side] === run?.candidate ? " · candidate" : "";
+    const slowest = spent.slowest
+      ? `<small>slowest ${esc(spent.slowest.san)} at ${seconds(spent.slowest.elapsed_ms)}</small>` : "";
+    rows.push(factRow(side === "white" ? "White" : "Black",
+      `${esc(spec.name)}${badge}<small>${seconds(spent.total)} over ${spent.moves} moves</small>${slowest}`));
+  }
+  if (limits) {
+    rows.push(factRow("Clock", `${limits.base_ms / 1000}s + ${limits.increment_ms / 1000}s<small>ply cap ${limits.ply_cap}</small>`));
+  }
+  rows.push(factRow("Recorded as", `${esc(detail.id)}<small>pair ${esc(detail.pair_id || "—")} · seed ${esc(String(detail.seed ?? "—"))}</small>`));
+  $("g-facts").innerHTML = rows.join("");
+}
+function renderDetail() {
+  if (!detail) return;
+  const frame = detail.frames[detailIndex] || {fen:initialFen};
+  const key = `${detail.id}:${frame.fen}:${frame.uci}:${detailFlip}`;
+  if ($("g-board").dataset.key !== key) {
+    const same = detailShown && detailShown.id === detail.id && detailShown.flip === detailFlip;
+    const plan = same
+      ? movePlan(detail.frames, detailShown.index, detailIndex, detailShown.fen, detailFlip) : null;
+    $("g-board").innerHTML = boardHtml(frame.fen, frame.uci, detailFlip);
+    $("g-board").dataset.key = key;
+    animateMove($("g-board"), plan);
+  }
+  detailShown = {id:detail.id, index:detailIndex, fen:frame.fen, flip:detailFlip};
+  $("g-board").setAttribute("aria-label",
+    `Chessboard, ${frame.fen.split(" ")[1] === "w" ? "White" : "Black"} to move, ${frame.san || "starting position"}`);
+  for (const [where, side] of [["top", detailFlip ? "white" : "black"], ["bottom", detailFlip ? "black" : "white"]]) {
+    const spec = engine(detail[side]);
+    $(`g-${where}-name`).textContent = spec.name;
+    $(`g-${where}-family`).textContent = spec.family;
+    $(`g-${where}-clock`).textContent = clock(frame[`${side}_ms`]);
+    $(`g-${where}-clock`).classList.toggle("turn", frame.fen.split(" ")[1] === side[0]);
+    $(`g-${where}-dot`).className = `piece-dot ${side}`;
+  }
+  $("g-position").textContent = detailIndex
+    ? `Ply ${detailIndex} / ${detail.frames.length - 1} · ${detail.frames[detailIndex].san}`
+    : "Starting position";
+  $("g-timing").textContent = detailIndex ? `took ${seconds(detail.frames[detailIndex].elapsed_ms)}` : "";
+  for (const id of ["g-first", "g-previous"]) $(id).disabled = detailIndex === 0;
+  for (const id of ["g-next", "g-last"]) $(id).disabled = detailIndex >= detail.frames.length - 1;
+  $("g-play").disabled = detail.frames.length <= 1;
+  document.querySelectorAll("#g-moves button").forEach((button) =>
+    button.classList.toggle("selected", Number(button.dataset.frame) === detailIndex));
+  const selected = $("g-moves").querySelector("button.selected");
+  if (selected) selected.scrollIntoView({block:"nearest"});
+}
+function detailTone() {
+  if (detail.status !== "completed" || detail.result === "void") return "";
+  if (detail.result === "draw") return "drawn";
+  return detail[detail.result] === run?.candidate ? "won" : "lost";
+}
+function showGame(loaded, index) {
+  detail = loaded;
+  detailShown = null;
+  detailIndex = Math.max(0, Math.min(index ?? loaded.frames.length - 1, loaded.frames.length - 1));
+  detailFlip = run ? loaded.black === run.candidate : false;
+  const position = run ? run.games.findIndex((game) => game.id === loaded.id) + 1 : 0;
+  $("game-eyebrow").textContent = position
+    ? `Game ${position} of ${run.games.length}` : "Game";
+  $("game-dialog-title").textContent = loaded.opening.name;
+  $("game-dialog-meta").textContent =
+    `${engine(loaded.white).name} versus ${engine(loaded.black).name}`;
+  $("g-outcome").textContent = outcomeText(loaded);
+  $("g-outcome").className = `outcome ${detailTone()}`;
+  $("g-moves").innerHTML = movesHtml(loaded.frames);
+  renderFacts();
+  $("g-note").textContent = loaded.pgn ? "Clocks are the ones the referee recorded." : "Still being played.";
+  $("g-pgn").disabled = !loaded.pgn;
+  $("g-logs").textContent = JSON.stringify(
+    {engines: loaded.engine_info, logs: loaded.logs, seed: loaded.seed}, null, 2);
+  renderDetail();
+  if (!$("game-dialog").open) $("game-dialog").showModal();
+}
+async function openGame(gameId, index) {
+  pauseDetail();
+  try {
+    showGame(await api(`/api/game?run=${encodeURIComponent(runId)}&game=${encodeURIComponent(gameId)}`), index);
+  } catch (error) { showError(error); }
+}
+function pauseDetail() {
+  clearInterval(detailTimer);
+  detailTimer = null;
+  $("g-play").textContent = "▶";
+  $("g-play").setAttribute("aria-label", "Play replay");
+}
+function stepDetail(index) {
+  if (!detail) return;
+  detailIndex = Math.max(0, Math.min(index, detail.frames.length - 1));
+  renderDetail();
+}
+function bindGameWindow() {
+  $("g-flip").addEventListener("click", () => { detailFlip = !detailFlip; detailShown = null; renderDetail(); });
+  $("g-first").addEventListener("click", () => { pauseDetail(); stepDetail(0); });
+  $("g-previous").addEventListener("click", () => { pauseDetail(); stepDetail(detailIndex - 1); });
+  $("g-next").addEventListener("click", () => { pauseDetail(); stepDetail(detailIndex + 1); });
+  $("g-last").addEventListener("click", () => { pauseDetail(); stepDetail(detail.frames.length - 1); });
+  $("g-play").addEventListener("click", () => {
+    if (detailTimer) { pauseDetail(); return; }
+    if (detailIndex >= detail.frames.length - 1) stepDetail(0);
+    $("g-play").textContent = "Ⅱ";
+    $("g-play").setAttribute("aria-label", "Pause replay");
+    detailTimer = setInterval(() => {
+      if (detailIndex >= detail.frames.length - 1) pauseDetail();
+      else stepDetail(detailIndex + 1);
+    }, 650);
+  });
+  $("g-moves").addEventListener("click", (event) => {
+    const target = event.target.closest("button[data-frame]");
+    if (target) { pauseDetail(); stepDetail(Number(target.dataset.frame)); }
+  });
+  $("g-copy-fen").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(detail.frames[detailIndex].fen);
+      $("g-copy-fen").textContent = "Copied";
+      setTimeout(() => $("g-copy-fen").textContent = "Copy FEN", 1500);
+    } catch { showError(new Error("Clipboard unavailable. The FEN is in the exported game JSON.")); }
+  });
+  $("g-pgn").addEventListener("click", () => savePgn(detail));
+  $("g-open").addEventListener("click", () => {
+    const id = detail.id;
+    $("game-dialog").close();
+    chooseGame(id);
+  });
+  $("game-dialog").addEventListener("close", pauseDetail);
+  $("game-dialog").addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (["INPUT", "SELECT", "TEXTAREA"].includes(event.target.tagName)) return;
+    event.preventDefault();
+    pauseDetail();
+    stepDetail(detailIndex + (event.key === "ArrowLeft" ? -1 : 1));
+  });
+}
+function savePgn(source) {
+  if (!source?.pgn) return;
+  const url = URL.createObjectURL(new Blob([source.pgn], {type:"application/x-chess-pgn"}));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${runId || "game"}-${source.id}.pgn`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── Dropping an agent in ──────────────────────────────────────────────────────────────────
+// Whatever is dropped becomes the zip `make zip` would have produced, and the server checks it
+// the way the platform does. A dropped file has no path the browser will share, so the bytes
+// travel rather than a reference to them.
+const SKIP = new Set([
+  "__pycache__", ".git", ".venv", ".cache", ".chesslab", ".tools",
+  ".mypy_cache", ".ruff_cache", "node_modules", ".DS_Store", ".idea", ".vscode",
+]);
+const CRC_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index++) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit++) value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+    table[index] = value;
+  }
+  return table;
+})();
+const crc32 = (bytes) => {
+  let crc = 0xffffffff;
+  for (let index = 0; index < bytes.length; index++) crc = CRC_TABLE[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+};
+const size = (value) => value < 1000 ? `${value} B`
+  : value < 1000000 ? `${(value / 1000).toFixed(1)} kB` : `${(value / 1000000).toFixed(1)} MB`;
+let staged = null;
+let dragDepth = 0;
+
+async function deflateRaw(bytes) {
+  if (typeof CompressionStream === "undefined") return bytes;
+  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+// Same shape as ladder/public/zipper.js: fixed timestamps, so re-zipping is a pure function.
+async function buildZip(files) {
+  const encoder = new TextEncoder(), parts = [], directory = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = encoder.encode(file.name);
+    const raw = new Uint8Array(await file.blob.arrayBuffer());
+    const crc = crc32(raw);
+    const packed = raw.length ? await deflateRaw(raw) : new Uint8Array(0);
+    const deflated = packed.length < raw.length;
+    const body = deflated ? packed : raw, method = deflated ? 8 : 0;
+    const header = new DataView(new ArrayBuffer(30));
+    header.setUint32(0, 0x04034b50, true); header.setUint16(4, 20, true);
+    header.setUint16(6, 0x0800, true); header.setUint16(8, method, true);
+    header.setUint16(10, 0, true); header.setUint16(12, 33, true);
+    header.setUint32(14, crc, true); header.setUint32(18, body.length, true);
+    header.setUint32(22, raw.length, true); header.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(header.buffer), name, body);
+    const entry = new DataView(new ArrayBuffer(46));
+    entry.setUint32(0, 0x02014b50, true); entry.setUint16(4, 20, true); entry.setUint16(6, 20, true);
+    entry.setUint16(8, 0x0800, true); entry.setUint16(10, method, true);
+    entry.setUint16(12, 0, true); entry.setUint16(14, 33, true);
+    entry.setUint32(16, crc, true); entry.setUint32(20, body.length, true);
+    entry.setUint32(24, raw.length, true); entry.setUint16(28, name.length, true);
+    entry.setUint32(38, 0o100644 << 16, true); entry.setUint32(42, offset, true);
+    directory.push(new Uint8Array(entry.buffer), name);
+    offset += 30 + name.length + body.length;
+  }
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true);
+  end.setUint16(10, files.length, true);
+  end.setUint32(12, directory.reduce((total, chunk) => total + chunk.length, 0), true);
+  end.setUint32(16, offset, true);
+  return new Blob([...parts, ...directory, new Uint8Array(end.buffer)], {type:"application/zip"});
+}
+function readEntries(reader) {
+  return new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+}
+async function walkEntry(entry, prefix, out) {
+  if (SKIP.has(entry.name)) return;
+  const path = prefix ? `${prefix}/${entry.name}` : entry.name;
+  if (entry.isFile) {
+    out.push({name:path, blob: await new Promise((resolve, reject) => entry.file(resolve, reject))});
+    return;
+  }
+  const reader = entry.createReader();
+  for (;;) {
+    const batch = await readEntries(reader);
+    if (!batch.length) break;
+    for (const child of batch) await walkEntry(child, path, out);
+  }
+}
+async function filesFromDrop(transfer) {
+  const roots = [...transfer.items].map((item) => item.webkitGetAsEntry?.()).filter(Boolean);
+  if (!roots.length) return [...transfer.files].map((file) => ({name:file.name, blob:file}));
+  const out = [];
+  for (const root of roots) await walkEntry(root, "", out);
+  return out;
+}
+function filesFromInput(list) {
+  return [...list].map((file) => ({name:file.webkitRelativePath || file.name, blob:file}))
+    .filter((file) => !file.name.split("/").some((part) => SKIP.has(part)));
+}
+// A dropped folder arrives as "my-agent/agent.py"; the platform imports `agent` from the root.
+function stripWrapper(files) {
+  if (files.some((file) => file.name === "agent.py")) return {files, folder:""};
+  const tops = new Set(files.map((file) => file.name.split("/")[0]));
+  if (tops.size !== 1) return {files, folder:""};
+  const folder = [...tops][0], prefix = `${folder}/`;
+  const stripped = files.map((file) => ({...file, name:file.name.slice(prefix.length)}));
+  return stripped.some((file) => file.name === "agent.py") ? {files:stripped, folder} : {files, folder};
+}
+function titleFrom(text) {
+  const words = text.replace(/\.(zip|py)$/i, "").replace(/[-_]+/g, " ").trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : "";
+}
+function stageDrop(collected) {
+  $("drop-error").hidden = true;
+  $("drop-report").hidden = true;
+  if (!collected.length) throw new Error("There were no files in that drop");
+  if (collected.length === 1 && /\.zip$/i.test(collected[0].name)) {
+    staged = {blob:collected[0].blob, label:collected[0].name, count:null,
+      bytes:collected[0].blob.size, suggestion:titleFrom(collected[0].name)};
+  } else {
+    const {files, folder} = stripWrapper(collected);
+    const bytes = files.reduce((total, file) => total + file.blob.size, 0);
+    if (!files.some((file) => file.name === "agent.py")) {
+      throw new Error("No agent.py in there. Drop the folder that holds it, or the file itself.");
+    }
+    staged = {files, label: folder || files.map((file) => file.name).join(", "),
+      count:files.length, bytes, suggestion:titleFrom(folder || "New agent")};
+  }
+  $("drop-summary").textContent = staged.count === null
+    ? `${staged.label} · ${size(staged.bytes)}`
+    : `${staged.label} · ${staged.count} file${staged.count === 1 ? "" : "s"} · ${size(staged.bytes)}`;
+  $("drop-name").value = staged.suggestion;
+  $("drop-family").value = "";
+  $("drop-form").hidden = false;
+  $("drop-name").focus();
+  $("drop-name").select();
+}
+function veil(show) {
+  $("drop-veil").hidden = !show;
+  if (!show) dragDepth = 0;
+}
+async function receive(collected) {
+  openRegistry(false);
+  try {
+    stageDrop(collected);
+  } catch (error) {
+    staged = null;
+    $("drop-form").hidden = true;
+    $("drop-error").textContent = error.message;
+    $("drop-error").hidden = false;
+    $("drop-error").scrollIntoView({block:"nearest"});
+  }
+}
+function bindDrop() {
+  const carriesFiles = (event) => [...(event.dataTransfer?.types || [])].includes("Files");
+  document.addEventListener("dragenter", (event) => {
+    if (!carriesFiles(event)) return;
+    dragDepth++;
+    veil(true);
+  });
+  document.addEventListener("dragover", (event) => { if (carriesFiles(event)) event.preventDefault(); });
+  document.addEventListener("dragleave", () => { if (--dragDepth <= 0) veil(false); });
+  document.addEventListener("drop", async (event) => {
+    if (!carriesFiles(event)) return;
+    event.preventDefault();
+    veil(false);
+    await receive(await filesFromDrop(event.dataTransfer));
+  });
+  $("drop-zone").addEventListener("click", (event) => {
+    if (event.target.closest("button")) return;
+    $("folder-input").click();
+  });
+  $("pick-folder").addEventListener("click", () => $("folder-input").click());
+  $("pick-files").addEventListener("click", () => $("files-input").click());
+  for (const id of ["folder-input", "files-input"]) {
+    $(id).addEventListener("change", async (event) => {
+      await receive(filesFromInput(event.target.files));
+      event.target.value = "";
+    });
+  }
+  $("drop-cancel").addEventListener("click", () => { staged = null; $("drop-form").hidden = true; });
+  $("drop-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!staged) return;
+    $("drop-error").hidden = true;
+    $("drop-save").disabled = true;
+    $("drop-save").textContent = "Checking the agent…";
+    try {
+      const blob = staged.blob || await buildZip(staged.files);
+      const query = new URLSearchParams({name:$("drop-name").value.trim(),
+        family:$("drop-family").value.trim(), notes:$("drop-notes").value.trim()});
+      const response = await fetch(`/api/agents?${query}`, {method:"POST", body:blob,
+        headers:{"Content-Type":"application/zip", "X-CSRF-Token":token}});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || `Upload failed (${response.status})`);
+      applyCatalog(result.catalog);
+      staged = null;
+      $("drop-form").hidden = true;
+      $("drop-form").reset();
+      $("drop-report").textContent = `${result.engine.name} is in the registry. ${result.report}`;
+      $("drop-report").hidden = false;
+    } catch (error) {
+      $("drop-error").textContent = error.message || String(error);
+      $("drop-error").hidden = false;
+    } finally {
+      $("drop-save").disabled = false;
+      $("drop-save").textContent = "Add it";
+    }
+  });
 }
 
 // ── Playing the engine yourself ───────────────────────────────────────────────────────────
@@ -427,7 +903,7 @@ function promptPromotion(square, options) {
   if (!cell) return;
   const names = {q:"queen", r:"rook", b:"bishop", n:"knight"};
   const picker = document.createElement("div");
-  picker.className = displayRow(square) === 0 ? "promotion" : "promotion upward";
+  picker.className = rowOf(square, flipped) === 0 ? "promotion" : "promotion upward";
   picker.innerHTML = [...options].sort((a,b) => PROMOTIONS.indexOf(a[4]) - PROMOTIONS.indexOf(b[4]))
     .map((uci) => {
       const piece = play.your_colour === "white" ? uci[4].toUpperCase() : uci[4];
@@ -700,9 +1176,11 @@ async function init() {
     $("candidate").innerHTML = catalog.engines.filter((e) => e.available).map((e) => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join("");
     renderOpponents();
     renderPlayOptions();
+    bindSweep();
+    updateCompleteTest();
     $("candidate").addEventListener("change", renderOpponents);
     $("opponents").addEventListener("change", updateSetup);
-    for (const id of ["split","opening-count"]) $(id).addEventListener("change", updateSetup);
+    for (const id of ["split","opening-count","parallel"]) $(id).addEventListener("change", updateSetup);
     for (const [id,checked] of [["select-all",true],["select-none",false]]) $(id).addEventListener("click", () => { document.querySelectorAll("#opponents input:not(:disabled)").forEach((e) => e.checked = checked); updateSetup(); });
     $("clock-preset").addEventListener("change", () => {
       const presets = {smoke:[2,0.02,80],fast:[10,0.1,600],event:[120,0.5,600]};
@@ -716,15 +1194,23 @@ async function init() {
         const result = await api("/api/run", {label:$("label").value,candidate:$("candidate").value,
           opponents:selectedOpponents(),openings:chosenOpenings().map((o) => o.id),
           base_ms:Math.round(Number($("base").value)*1000),increment_ms:Math.round(Number($("increment").value)*1000),
-          ply_cap:Number($("ply-cap").value),seed:Number($("seed").value)});
+          ply_cap:Number($("ply-cap").value),seed:Number($("seed").value),
+          parallel:Number($("parallel").value)});
         $("setup-dialog").close(); selectionRevision++; runId = result.id; gameId = ""; following = true; moveKey = ""; pauseReplay(); await poll();
         if (window.innerWidth < 650) $("run-title").scrollIntoView({block:"start"});
       } catch (error) { showError(error); $("start").disabled = false; }
     });
     $("stop").addEventListener("click", async () => { try { await api("/api/stop",{}); await poll(); } catch (error) { showError(error); } });
+    $("resume").addEventListener("click", async () => {
+      clearError();
+      $("resume").disabled = true;
+      try { await api("/api/resume", {run:runId}); following = true; moveKey = ""; await poll(); }
+      catch (error) { showError(error); $("resume").disabled = false; }
+    });
     $("history").addEventListener("change", async () => { selectionRevision++; runId = $("history").value; gameId = ""; following = false; frameIndex = 0; moveKey = ""; pauseReplay(); await poll(); });
     $("game-select").addEventListener("change", () => chooseGame($("game-select").value));
-    $("game-map").addEventListener("click", (event) => { const target = event.target.closest("button[data-game]"); if (target) chooseGame(target.dataset.game); });
+    bindGameWindow();
+  $("game-map").addEventListener("click", (event) => { const target = event.target.closest("button[data-game]"); if (target) openGame(target.dataset.game); });
     $("moves").addEventListener("click", (event) => { const target = event.target.closest("button[data-frame]"); if (target) { pauseReplay(); selectFrame(Number(target.dataset.frame)); } });
     $("flip").addEventListener("click", () => { flipped = !flipped; renderBoard(); });
     $("first").addEventListener("click", () => { pauseReplay(); selectFrame(0); });
@@ -743,7 +1229,7 @@ async function init() {
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); pauseReplay(); selectFrame(frameIndex+(event.key === "ArrowLeft" ? -1 : 1)); }
     });
     $("copy-fen").addEventListener("click", async () => { try { await navigator.clipboard.writeText(currentFrame().fen); $("copy-fen").textContent = "Copied"; setTimeout(() => $("copy-fen").textContent = "Copy FEN", 1500); } catch { showError(new Error("Clipboard unavailable. The FEN is included in the exported game JSON.")); } });
-    $("download-pgn").addEventListener("click", () => { const url = URL.createObjectURL(new Blob([game.pgn],{type:"application/x-chess-pgn"})); const link = document.createElement("a"); link.href = url; link.download = `${run.id}-${game.id}.pgn`; link.click(); setTimeout(() => URL.revokeObjectURL(url),1000); });
+    $("download-pgn").addEventListener("click", () => savePgn(game));
     await poll(); setInterval(poll,1200);
   } catch (error) { showError(error); }
 }

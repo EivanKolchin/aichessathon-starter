@@ -108,6 +108,7 @@ class Search:
         self.evaluation = EvalState()
         self.nodes = self.qnodes = self.tt_hits = 0
         self.deadline = 0.0
+        self.clock_check_mask = 31
 
     def _seed_history(self, board: chess.Board) -> None:
         probe = board.copy(stack=True)
@@ -153,7 +154,7 @@ class Search:
         self.qnodes += quiescent
         if self.config.max_nodes and self.nodes >= self.config.max_nodes:
             raise SearchStopped
-        if self.nodes % 32 == 0 and time.monotonic() >= self.deadline:
+        if self.nodes & self.clock_check_mask == 0 and time.perf_counter() >= self.deadline:
             raise SearchStopped
 
     def _draw(self, key: PositionKey, ply: int) -> int | None:
@@ -306,7 +307,7 @@ class Search:
     def _root(self, depth: int, alpha: int, beta: int, hint: chess.Move) -> tuple[int, chess.Move]:
         best, best_move = -INFINITY, hint
         for index, move in enumerate(self._order(list(self.board.legal_moves), hint, 0)):
-            if time.monotonic() >= self.deadline:
+            if time.perf_counter() >= self.deadline:
                 raise SearchStopped
             undo = self._push(move)
             try:
@@ -338,8 +339,9 @@ class Search:
         return tuple(result)
 
     def analyse(self, board: chess.Board, soft_ms: float, hard_ms: float) -> SearchResult:
-        started = time.monotonic()
+        started = time.perf_counter()
         self.deadline = started + max(0, hard_ms) / 1000
+        self.clock_check_mask = 0 if hard_ms < 250 else 31
         self.board = board.copy(stack=True)
         self.evaluation = EvalState.from_board(self.board)
         self._seed_history(self.board)
@@ -353,7 +355,7 @@ class Search:
         completed = 0
         stopped = False
         for depth in range(1, self.config.max_depth + 1):
-            if depth > 1 and (time.monotonic() - started) * 1000 >= soft_ms:
+            if depth > 1 and (time.perf_counter() - started) * 1000 >= soft_ms:
                 break
             window = 40 if depth > 2 and self.config.aspiration else INFINITY
             try:
@@ -379,7 +381,7 @@ class Search:
             completed,
             self.nodes,
             self.qnodes,
-            (time.monotonic() - started) * 1000,
+            (time.perf_counter() - started) * 1000,
             self.tt_hits,
             stopped,
             self._pv(best, max(1, completed)),

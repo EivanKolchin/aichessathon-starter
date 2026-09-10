@@ -5,6 +5,7 @@ import tempfile
 import threading
 import time
 import unittest
+import unittest.mock
 import urllib.error
 import urllib.request
 import zipfile
@@ -14,14 +15,16 @@ from typing import Any
 import chess
 import chess.pgn
 
+import chesslab.lab
 from chesslab.compare import compare
-from chesslab.lab import Lab, schedule
+from chesslab.lab import Lab, machine_description, schedule
 from chesslab.openings import catalog
 from chesslab.players import Trace, UCIAgent, replay
 from chesslab.registry import ROOT, EngineSpec, freeze, write_json
 from chesslab.server import Server, export_run
 from chesslab.statistics import summarise
 from harness.package import members
+from harness.referee import play_match
 from harness.sandbox import AgentFailure
 
 FIXTURE = Path(__file__).with_name("uci_fixture.py")
@@ -80,6 +83,222 @@ class ExperimentTests(unittest.TestCase):
             self.assertIn("manifest.json", archive.namelist())
             self.assertIn("results.csv", archive.namelist())
             self.assertIn("games.pgn", archive.namelist())
+
+    def test_every_game_is_played_without_being_asked_again(self) -> None:
+        run = self.run_batch(opponents=["greedy", "minimax"], openings=["italian", "scotch"])
+        self.assertEqual(run["status"], "completed")
+        self.assertEqual(len(run["games"]), 8)
+        self.assertTrue(all(game["status"] == "completed" for game in run["games"]))
+        # One worker, one game at a time, and it moved on by itself each time.
+        self.assertEqual(run["environment"]["parallel_games"], 1)
+
+    def test_games_run_side_by_side_and_all_of_them_finish(self) -> None:
+        seen = 0
+        started = self.lab.start(
+            {
+                "candidate": "random",
+                "opponents": ["greedy"],
+                "openings": ["italian", "scotch"],
+                "base_ms": 600,
+                "increment_ms": 0,
+                "ply_cap": 20,
+                "parallel": 2,
+            }
+        )
+        assert self.lab.worker is not None
+        deadline = time.monotonic() + 60
+        while self.lab.worker.is_alive() and time.monotonic() < deadline:
+            seen = max(seen, len(self.lab.live))
+            time.sleep(0.01)
+        self.lab.worker.join(timeout=10)
+        self.assertFalse(self.lab.worker.is_alive(), "the batch never finished")
+        run = self.lab.state(started)["run"]
+        self.assertEqual(run["status"], "completed")
+        self.assertEqual(len(run["games"]), 4)
+        self.assertTrue(all(game["status"] == "completed" for game in run["games"]))
+        self.assertGreater(seen, 1, "no two games were ever in flight at once")
+        self.assertEqual(run["environment"]["parallel_games"], 2)
+        self.assertEqual(self.lab.live, {})
+        for item in run["games"]:
+            detail = self.lab.game(started, item["id"])
+            self.assertEqual(len(detail["frames"]), item["plies"] + 1)
+
+    def test_every_live_game_can_be_watched_while_it_plays(self) -> None:
+        started = self.lab.start(
+            {
+                "candidate": "random",
+                "opponents": ["greedy"],
+                "openings": ["italian", "scotch"],
+                "base_ms": 1200,
+                "increment_ms": 0,
+                "ply_cap": 20,
+                "parallel": 2,
+            }
+        )
+        assert self.lab.worker is not None
+        watched: set[str] = set()
+        deadline = time.monotonic() + 60
+        while self.lab.worker.is_alive() and len(watched) < 2 and time.monotonic() < deadline:
+            for game_id in list(self.lab.live):
+                detail = self.lab.game(started, game_id)
+                self.assertIsNone(detail["pgn"])
+                self.assertEqual(detail["status"], "running")
+                watched.add(game_id)
+            time.sleep(0.01)
+        self.lab.worker.join(timeout=30)
+        self.assertGreaterEqual(len(watched), 2, "never saw two games live at the same time")
+
+    def test_a_game_the_lab_cannot_play_does_not_sink_the_batch(self) -> None:
+        calls: list[int] = []
+
+        def explode(*args: Any, **kwargs: Any) -> Any:
+            calls.append(1)
+            if len(calls) == 1:
+                raise OSError("no file handles left")
+            return play_match(*args, **kwargs)
+
+        with unittest.mock.patch("chesslab.lab.play_match", explode):
+            run = self.run_batch(openings=["italian", "scotch"], parallel=1)
+        statuses = [game["status"] for game in run["games"]]
+        self.assertEqual(statuses.count("failed"), 1)
+        self.assertEqual(statuses.count("completed"), 3)
+        self.assertEqual(run["status"], "completed")
+        self.assertIn("no file handles left", str(run["game_errors"]))
+        # A failed game is not scored, and it is still there to resume.
+        self.assertTrue(all(row["games"] <= 3 for row in run["summary"]))
+        self.assertEqual(self.lab.state(run["id"])["remaining"], 1)
+
+    def test_a_stuck_platform_probe_never_stalls_an_experiment(self) -> None:
+        """platform.uname() asks WMI on Windows, and a wedged WMI service never answers."""
+        blocked = threading.Event()
+
+        def forever() -> str:
+            blocked.wait()
+            return "never returned"
+
+        with unittest.mock.patch("platform.platform", forever):
+            chesslab.lab._MACHINE = None
+            started = time.monotonic()
+            described = machine_description(timeout=0.2)
+            elapsed = time.monotonic() - started
+        chesslab.lab._MACHINE = None
+        blocked.set()
+        self.assertLess(elapsed, 5, "the probe was allowed to block")
+        self.assertEqual(set(described), {"platform", "processor", "machine", "host"})
+        self.assertIn("description unavailable", described["platform"])
+        self.assertTrue(described["host"], "the host name has a cheap source")
+
+    def test_a_parallel_run_is_not_comparable_with_a_sequential_one(self) -> None:
+        sequential = self.run_batch(seed=11)
+        parallel = self.run_batch(seed=11, parallel=2)
+        self.assertEqual(parallel["environment"]["parallel_games"], 2)
+        # Contended games are a different experiment; the environment guard already says so.
+        with self.assertRaises(ValueError):
+            compare(sequential, parallel)
+        self.assertEqual(compare(sequential, sequential)["opponents"][0]["score_delta"], 0)
+
+    def test_parallelism_is_bounded_like_every_other_limit(self) -> None:
+        for value in (0, 17, True, "four"):
+            with self.subTest(parallel=value), self.assertRaises(ValueError):
+                self.lab.start(
+                    {
+                        "candidate": "random",
+                        "opponents": ["greedy"],
+                        "openings": ["italian"],
+                        "parallel": value,
+                    }
+                )
+
+    def test_a_stopped_experiment_resumes_where_it_left_off(self) -> None:
+        run_id = self.lab.start(
+            {
+                "candidate": "random",
+                "opponents": ["greedy"],
+                "openings": ["italian", "scotch"],
+                "base_ms": 400,
+                "increment_ms": 0,
+                "ply_cap": 20,
+            }
+        )
+        # Stop after the game in flight, then pick the batch back up. A game the lab could not
+        # play at all is marked failed rather than completed, so this waits on the worker too.
+        assert self.lab.worker is not None
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline and self.lab.worker.is_alive():
+            if any(g["status"] == "completed" for g in self.lab.state(run_id)["run"]["games"]):
+                break
+            time.sleep(0.05)
+        self.lab.stop()
+        assert self.lab.worker is not None
+        self.lab.worker.join(timeout=30)
+        stopped = self.lab.state(run_id)["run"]
+        self.assertEqual(stopped["status"], "stopped")
+        played = [g["id"] for g in stopped["games"] if g["status"] == "completed"]
+        self.assertLess(len(played), 4)
+        self.assertGreater(len(played), 0)
+
+        self.assertEqual(self.lab.resume(run_id), run_id)
+        assert self.lab.worker is not None
+        self.lab.worker.join(timeout=60)
+        finished = self.lab.state(run_id)["run"]
+        self.assertEqual(finished["status"], "completed")
+        self.assertEqual(self.lab.state(run_id)["remaining"], 0)
+        self.assertTrue(all(g["status"] == "completed" for g in finished["games"]))
+        self.assertIn("resumed_at", finished)
+        # The games from before the stop keep their result; nothing was replayed.
+        for game_id in played:
+            before = next(g for g in stopped["games"] if g["id"] == game_id)
+            after = next(g for g in finished["games"] if g["id"] == game_id)
+            self.assertEqual(before["result"], after["result"])
+            self.assertEqual(before["termination"], after["termination"])
+        for item in finished["games"]:
+            detail = self.lab.game(run_id, item["id"])
+            self.assertEqual(len(detail["frames"]), item["plies"] + 1)
+
+    def test_a_run_cut_off_by_a_restart_is_marked_and_can_be_resumed(self) -> None:
+        run_id = self.lab.start(
+            {
+                "candidate": "random",
+                "opponents": ["greedy"],
+                "openings": ["italian"],
+                "base_ms": 400,
+                "increment_ms": 0,
+                "ply_cap": 20,
+            }
+        )
+        assert self.lab.worker is not None
+        self.lab.worker.join(timeout=30)
+        # Rewrite the manifest the way a kill mid-game would leave it.
+        path = self.directory / "runs" / run_id / "manifest.json"
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["status"] = "running"
+        manifest["games"][-1].update(status="running", result=None, termination=None, plies=0)
+        write_json(path, manifest)
+        self.lab.close()
+
+        self.lab = Lab(self.directory / "runs", self.registry)
+        reopened = self.lab.state(run_id)["run"]
+        self.assertEqual(reopened["status"], "interrupted")
+        self.assertEqual(reopened["games"][-1]["status"], "interrupted")
+        self.assertEqual(self.lab.state(run_id)["remaining"], 1)
+
+        self.lab.resume(run_id)
+        assert self.lab.worker is not None
+        self.lab.worker.join(timeout=60)
+        finished = self.lab.state(run_id)["run"]
+        self.assertEqual(finished["status"], "completed")
+        self.assertTrue(all(g["status"] == "completed" for g in finished["games"]))
+        # It played on with the build it was frozen with, not a fresh copy of the working tree.
+        self.assertEqual(
+            finished["engines"]["random"]["sha256"], reopened["engines"]["random"]["sha256"]
+        )
+
+    def test_resuming_is_refused_when_there_is_nothing_to_resume(self) -> None:
+        run = self.run_batch()
+        with self.assertRaises(ValueError):
+            self.lab.resume(run["id"])
+        with self.assertRaises(ValueError):
+            self.lab.resume("no-such-run")
 
     def test_illegal_move_loses_both_colours(self) -> None:
         self.register_fixture('def get_move(fen, time_left_ms):\n    return "a1a8"\n')

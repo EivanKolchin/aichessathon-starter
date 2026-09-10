@@ -37,6 +37,58 @@ neural runtime stack. Use the repository's normal `uv sync` environment when dev
 that import torch, numpy, numba or ONNX Runtime. `requires` in an engine spec lets the UI identify
 missing packages before launching that model.
 
+## Running many games at once
+
+**Games at once** in the experiment conditions decides how many games are played side by side.
+One at a time is the default and the only setting whose clocks mean what the event's clocks
+mean: AGENTS.md gives an agent one core, and a game that shares the machine with five others is
+measuring contended time, not its own. Above one, every engine still reads `time_left_ms` and
+still manages a clock - just a clock that is now lying to it.
+
+That is a real trade, not a footnote, so the lab makes it visible rather than convenient:
+
+- The run strip says `4 at once`, and the results carry a note saying the games were contended.
+- `parallel_games` is written into the run's recorded environment, and `chesslab compare` already
+  refuses to compare runs whose environments differ. A parallel run therefore cannot be matched
+  against a sequential one, by construction rather than by discipline.
+- One game that the lab itself cannot play - a spawn failure, a full disk - is marked `failed`
+  and the batch carries on. It stays unplayed, so **Resume** picks it up later.
+
+Use it for what it is good for: coverage across every opening, protocol and reliability sweeps,
+and finding the position where a build falls over. Use one at a time for anything you intend to
+quote as strength.
+
+**Complete test** in the launch footer sets that up in one press: every ready opponent, every
+position in the split, both colours, full games on a fast clock, four at a time. The button
+carries the number of games it would schedule before you press it. **Data view** in the run strip
+drops the board and the game viewer so the table, the game map and the counters have the width to
+themselves, which is what you want while a few hundred games fill in.
+
+While several games are live, a row of chips above the board names each one and switches the
+board between them; the game you pick stays the one being followed until it finishes.
+
+## Opening one game, and picking a batch back up
+
+Every square in the **game map** opens that game in its own window: the board at full size, the
+clocks the referee recorded, the move list, and the transport controls to step through it a move
+at a time or let it replay. Beside the board is what you usually want when a result surprises
+you - the opening and its split, how the game ended, which side was the candidate, how much
+clock each engine spent and over how many moves, its slowest move and when, the time control
+and ply cap, and the game, pair and seed it was recorded under. **Engine output and settings**
+holds the UCI identification and whatever the agents printed. **Open in the arena** moves it into
+the main viewer if you would rather keep it there.
+
+Opening a game this way does not take the arena over. A batch that is still running keeps
+playing, and the arena keeps following the game it is playing, so you can read game 3 while
+game 40 is being played.
+
+A batch already moves to the next game by itself. If one is **stopped**, or a restart cuts it
+off mid-game, the games it already played keep their results and the run strip offers
+**Resume** with the number of games still to play. Resuming replays nothing that finished and
+keeps the frozen build the run started with, so the second half of an experiment is the same
+code as the first; if that build has been deleted, the lab refuses to resume rather than quietly
+playing something else.
+
 ## Play the engine yourself
 
 **Play the engine** in the sidebar opens a game against any registered engine. Pick a colour, a
@@ -69,19 +121,29 @@ directory rather than a frozen build copy, so it plays the file you just edited.
 ## What is implemented
 
 - Live board, recorded clocks, legal SAN move list, replay, flip, copy FEN and save PGN.
-- Engines added, replaced and removed from the browser, validated before they reach the registry.
+- Agents added by dropping a folder, file or zip on the page: validated against the platform's
+  archive rules, started and asked for a move, then registered. Paths and UCI engines too.
 - Human-versus-engine sparring: click-to-move with server-supplied legal moves, promotion
   picker, a real clock on both sides with flag falls scored the referee's way, take back,
   resign, pasted FEN starts, and a result the board tells you about.
 - Configurable candidate and opponent pool, immutable Python build copies, registered UCI engines.
 - 32 legal public opening positions in eight opening families. Five families are development;
   three different families are validation. The UI spreads small batches across families first.
-- Colour-swapped pairs with the same starting FEN and seed, shuffled pair order, sequential games.
+- Colour-swapped pairs with the same starting FEN and seed, shuffled pair order, and a chosen
+  number of games in flight at once, recorded and guarded so contended runs stay uncomparable.
 - Persistent experiment history, per-opponent W/D/L, failure counts, complete-pair score and
-  conservative uncertainty bounds, plus a clickable game map.
+  conservative uncertainty bounds, plus a game map that opens any game in its own window.
+- Stopped or interrupted experiments resume on the frozen build, keeping what already played.
 - Export of manifest, per-game JSON with logs and clocks, combined PGN, and raw results CSV.
 - Headless JSON experiments and matched comparisons for future tuning/evolution workers.
 - Hard UCI watchdog, single-writer results lock, restart interruption tracking, clean process teardown.
+- A deadline on the machine description. `platform.platform()`, `machine()`, `processor()` and
+  `node()` all go through `platform.uname()`, which asks WMI on Windows; a wedged WMI service
+  makes them block with no timeout of their own, and an experiment that never starts is a far
+  worse outcome than a thinner environment record. The probe gets four seconds and falls back to
+  `sys.platform`, `PROCESSOR_ARCHITECTURE` and `socket.gethostname()`. A run recorded through the
+  fallback has a different environment from one recorded normally, so `compare` will not pool
+  them - which is the right answer, since you no longer know what the second one ran on.
 
 There are **eight ready pure Python diagnostic opponents across six families**, plus the optional
 Numba baseline and any installed UCI engines. These small baselines are useful for regression and
@@ -99,16 +161,33 @@ engines are local, ignored files; other checkouts must install and register thei
 An opponent can be any directory exposing `agent.py` with `get_move(fen, time_left_ms)`, or any
 local engine that speaks standard UCI.
 
-The quickest way is **Engine registry → Add an agent** in the browser. Give it a name, a family
-and either the folder holding `agent.py` or the name of an installed UCI executable; the id is
-derived from the name until you type your own. The lab checks the files are actually there before
-saving, so a mistyped path is refused instead of becoming a dead entry, and the new engine appears
-in the opponent pool, the candidate list and the play dialog straight away. Anything you added
-this way carries a **Remove** button; the built-in baselines do not. Entries are written to
-`.chesslab/engines.json`, the same file the command line writes, so both routes agree.
+The quickest way is to **drop it in**. Drag a folder holding `agent.py`, that file on its own, or
+a zip anywhere onto the page; the registry opens with the drop staged, the name filled in from
+the folder, and one button left to press. Nothing needs a path typed in, and the browser never
+gets one: a dropped file has no path it will share, so the bytes are zipped in the page - the
+same shape `make zip` produces - and uploaded.
 
-The form covers name, family, folder or executable, required packages and a note. UCI options,
-extra build assets and per-move caps still need a JSON spec:
+What arrives is checked before it is kept, and it is the platform's own bar, not a friendlier
+one. The archive goes through the same validation as a build pulled from the ladder: `agent.py`
+at the root (a single wrapping folder is stripped for you), no paths that escape the directory,
+no symlinks, no native binaries or compiled Python even under an innocent name, and the 50 MB
+unzipped cap. Then the agent is **started through the platform's runner and asked for one move**
+from the opening position. Only a build that answers with a legal move reaches the registry;
+anything else is refused with the reason, including the agent's own traceback, and nothing is
+left behind on disk.
+
+An accepted build is unpacked into `.chesslab/agents/<id>/` and registered with its third-party
+imports as `requires` and its data folders as `includes`, so a later experiment freezes the whole
+thing. It shows up in the opponent pool, the candidate list and the play dialog straight away,
+and its **Remove** button takes the unpacked files with it.
+
+If the agent is already on this machine and you would rather point at it, or you are registering
+an installed UCI engine, **Register a path or a UCI engine instead** at the bottom of the dialog
+does that; the lab checks the files exist before saving, so a mistyped path is refused rather
+than becoming a dead entry. Either way, entries are written to `.chesslab/engines.json`, the same
+file the command line writes.
+
+UCI options, extra build assets and per-move caps still need a JSON spec:
 
 ```powershell
 .venv\Scripts\python.exe -m chesslab register chesslab\experiments\python-example.json

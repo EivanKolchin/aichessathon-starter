@@ -9,6 +9,9 @@ workers_dev = true
 
 [assets]
 directory = "./public"
+# src/index.js falls through to env.ASSETS for everything that is not /api/, so the binding
+# has to be declared; without it the Worker throws on the first page request.
+binding = "ASSETS"
 
 [vars]
 # Trust Cf-Access-Authenticated-User-Email. Only turn this on once Access fronts every

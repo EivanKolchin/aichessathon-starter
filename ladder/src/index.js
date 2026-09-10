@@ -1,6 +1,20 @@
 // Upload catalogue for the private ladder. This Worker stores and lists agent builds; it
 // never runs one. Games are played by whoever pulls the catalogue down to their own machine.
 
+import {
+  claimJob,
+  listRunners,
+  listRuns,
+  match,
+  putFrames,
+  putGame,
+  putManifest,
+  putRunStatus,
+  queueRun,
+  readGame,
+  readRun,
+  stopRun,
+} from "./experiments.js";
 import { inspect } from "./unzip.js";
 
 const ZIP_TYPES = ["application/zip", "application/x-zip-compressed", "application/octet-stream"];
@@ -206,6 +220,12 @@ async function withdraw(request, env, id, who) {
   return json({ agent: present(row), by: who.email });
 }
 
+// Handlers return either a payload or {error, status}; this keeps that in one place.
+function reply(result, created = 200) {
+  if (result && result.error) return json({ error: result.error }, result.status || 400);
+  return json(result, created);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -236,6 +256,40 @@ export default {
         return await upload(request, env, who);
       }
       if (request.method === "POST" && drop) return await withdraw(request, env, drop[1], who);
+
+      // Experiments: queued here, played on somebody's machine, reported back here.
+      if (request.method === "GET" && url.pathname === "/api/runs") {
+        return json({ viewer: who, runs: await listRuns(env), runners: await listRunners(env) });
+      }
+      if (request.method === "POST" && url.pathname === "/api/runs") {
+        return reply(await queueRun(request, env, who), 201);
+      }
+      if (request.method === "GET" && url.pathname === "/api/runners") {
+        return json({ runners: await listRunners(env) });
+      }
+      if (request.method === "POST" && url.pathname === "/api/jobs/claim") {
+        return json(await claimJob(request, env, who));
+      }
+      const route = match(url.pathname);
+      if (route && request.method === "GET" && route.kind === "run") {
+        const found = await readRun(env, route.runId);
+        return found ? json({ run: found }) : json({ error: "No such run" }, 404);
+      }
+      if (route && request.method === "GET" && route.kind === "game") {
+        const found = await readGame(env, route.runId, route.gameId);
+        return found ? json({ game: found }) : json({ error: "No such game" }, 404);
+      }
+      if (route && request.method === "POST") {
+        if (route.kind === "stop") return reply(await stopRun(env, route.runId));
+        if (route.kind === "manifest") return reply(await putManifest(request, env, route.runId));
+        if (route.kind === "status") return reply(await putRunStatus(request, env, route.runId));
+        if (route.kind === "game") {
+          return reply(await putGame(request, env, route.runId, route.gameId));
+        }
+        if (route.kind === "frames") {
+          return reply(await putFrames(request, env, route.runId, route.gameId));
+        }
+      }
     } catch (error) {
       return json({ error: `${error.name}: ${error.message}` }, 500);
     }

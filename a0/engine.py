@@ -31,7 +31,7 @@ class TimeControl:
             self.increment_estimate = 0.5 * self.increment_estimate + 0.5 * observed
 
     def allocate(self, remaining: int, board: chess.Board) -> Budget:
-        reserve = min(80.0, max(12.0, remaining * 0.03))
+        reserve = min(100.0, max(30.0, remaining * 0.03))
         available = max(0.0, remaining - reserve)
         horizon = 30 if board.occupied.bit_count() > 12 else 22
         soft = min(available, available / horizon + 0.65 * self.increment_estimate)
@@ -70,7 +70,7 @@ class ChessAgent:
         return self.board
 
     def get_move(self, fen: str, time_left_ms: int) -> str:
-        started = time.monotonic()
+        started = time.perf_counter()
         board = self.synchronise(fen)
         self.clock.observe(time_left_ms)
         if time_left_ms <= 60:
@@ -79,10 +79,10 @@ class ChessAgent:
                 raise ValueError("No legal move available")
             board.push(move)
             self.last_result = None
-            self.clock.finish(time_left_ms, (time.monotonic() - started) * 1000)
+            self.clock.finish(time_left_ms, (time.perf_counter() - started) * 1000)
             return move.uci()
         budget = self.clock.allocate(time_left_ms, board)
-        preparation_ms = (time.monotonic() - started) * 1000
+        preparation_ms = (time.perf_counter() - started) * 1000
         self.last_result = self.search.analyse(
             board,
             max(0, budget.soft_ms - preparation_ms),
@@ -90,7 +90,7 @@ class ChessAgent:
         )
         move = self.last_result.move
         board.push(move)
-        elapsed_ms = (time.monotonic() - started) * 1000
+        elapsed_ms = (time.perf_counter() - started) * 1000
         self.clock.finish(time_left_ms, elapsed_ms)
         if self.log:
             result = self.last_result

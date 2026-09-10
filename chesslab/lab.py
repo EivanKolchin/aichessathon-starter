@@ -7,10 +7,12 @@ import os
 import platform
 import random
 import shutil
+import socket
 import sys
 import threading
 import time
 import uuid
+from collections import deque
 from contextlib import suppress
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -21,15 +23,15 @@ import chess
 from chesslab.builds import build_spec, extract
 from chesslab.locking import WorkspaceLock
 from chesslab.openings import Opening, catalog
-from chesslab.players import ObservedAgent, Trace, make_player, replay
+from chesslab.players import Trace, make_player, replay
 from chesslab.registry import (
     ROOT,
     EngineSpec,
     custom_engines,
     drop,
-    identifier,
     file_hash,
     freeze,
+    identifier,
     load_registry,
     parse,
     store,
@@ -41,12 +43,48 @@ from harness.referee import play_match
 from harness.rules import INIT_BUDGET_S
 from harness.sandbox import AgentFailure, local
 
+PROBE_MS = 5000
+
 
 def bounded(request: dict[str, Any], key: str, default: int, low: int, high: int) -> int:
     value = request.get(key, default)
     if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
         raise ValueError(f"{key} must be an integer between {low} and {high}")
     return value
+
+
+_MACHINE: dict[str, str] | None = None
+
+
+def machine_description(timeout: float = 4.0) -> dict[str, str]:
+    """What this run played on.
+
+    Every one of these goes through platform.uname(), which on Windows asks WMI, and a
+    wedged WMI service makes it block with no timeout of its own. Recording a thinner
+    description beats an experiment that never starts, so the probe gets a deadline and the
+    answer is cached for the life of the process.
+    """
+    global _MACHINE
+    if _MACHINE is not None:
+        return _MACHINE
+    found: dict[str, str] = {}
+
+    def probe() -> None:
+        found["platform"] = platform.platform()
+        found["processor"] = platform.processor()
+        found["machine"] = platform.machine()
+        found["host"] = platform.node()
+
+    worker = threading.Thread(target=probe, name="chesslab-platform", daemon=True)
+    worker.start()
+    worker.join(timeout)
+    _MACHINE = {
+        "platform": found.get("platform", f"{sys.platform} (description unavailable)"),
+        "processor": found.get("processor", ""),
+        "machine": found.get("machine", os.environ.get("PROCESSOR_ARCHITECTURE", "")),
+        "host": found.get("host", socket.gethostname()),
+    }
+    return _MACHINE
 
 
 def runtime_versions() -> dict[str, str | None]:
@@ -101,9 +139,8 @@ class Lab:
         self.closing = threading.Event()
         self.worker: threading.Thread | None = None
         self.active: dict[str, Any] | None = None
-        self.live_game: dict[str, Any] | None = None
-        self.trace: Trace | None = None
-        self.players: list[ObservedAgent] = []
+        # Every game being played right now, by id. One entry is the sequential case.
+        self.live: dict[str, dict[str, Any]] = {}
         self.sparring: Sparring | None = None
         self.agents_dir = self.registry_path.parent / "agents"
         # Restart never silently resumes an experiment under different code or conditions.
@@ -146,8 +183,72 @@ class Lab:
         with self.lock:
             if self.sparring is not None and self.sparring.spec.id == engine_id:
                 raise ValueError("That engine is in the middle of a game")
+            spec = load_registry(self.registry_path).get(engine_id)
             drop(self.registry_path, engine_id)
+        # An agent that was dropped in lives here and nowhere else; take its files with it.
+        if spec is not None and spec.directory().parent == self.agents_dir.resolve():
+            shutil.rmtree(spec.directory(), ignore_errors=True)
         return self.catalog()
+
+    def adopt(self, payload: bytes, request: dict[str, str]) -> dict[str, Any]:
+        """Take a dropped folder, file or zip: check it the way the platform would, then keep it.
+
+        The archive goes through the same validation as a build pulled from the catalogue, and
+        then the agent is actually started and asked for a move. Nothing reaches the registry
+        that could not play, so a bad drop is a message here rather than a lost game later.
+        """
+        name = str(request.get("name", "")).strip()[:60]
+        if not name:
+            raise ValueError("Give the agent a name")
+        family = str(request.get("family", "")).strip()[:60] or name
+        note = str(request.get("notes", "")).strip()[:140]
+        engine_id = identifier(name)
+        with self.lock:
+            if self.worker is not None and self.worker.is_alive():
+                raise ValueError("An experiment is running; add agents once it finishes")
+            if self.sparring is not None and self.sparring.spec.id == engine_id:
+                raise ValueError("An engine with that name is in the middle of a game")
+        directory = self.agents_dir / engine_id
+        extract(payload, directory)
+        try:
+            spec = build_spec(
+                directory, engine_id, name, family, note or "Dropped into the lab"
+            )
+            report = self.probe(spec)
+        except BaseException:
+            shutil.rmtree(directory, ignore_errors=True)
+            raise
+        with self.lock:
+            store(self.registry_path, spec)
+        return {"catalog": self.catalog(), "engine": spec.data(), "report": report}
+
+    @staticmethod
+    def probe(spec: EngineSpec) -> str:
+        """Start the agent through the platform's own runner and take one move from it."""
+        ready, reason = spec.availability()
+        if not ready:
+            # Packages this environment does not have are the lab's problem, not the build's.
+            return f"Stored, but not playable here yet: {reason.lower()}"
+        agent = local(spec.directory())
+        started = time.monotonic()
+        try:
+            try:
+                agent.start(INIT_BUDGET_S)
+                uci = agent.move(chess.STARTING_FEN, PROBE_MS)
+            finally:
+                agent.stop()
+        except AgentFailure as failure:
+            detail = agent.stderr_log.strip()
+            raise ValueError(
+                f"It did not get a move out ({failure.reason})."
+                + (f"\n\n{detail}" if detail else "")
+            ) from None
+        board = chess.Board()
+        move = chess.Move.from_uci(uci) if len(uci) in {4, 5} else chess.Move.null()
+        if move not in board.legal_moves:
+            raise ValueError(f'It started, but answered "{uci}", which is not a legal move.')
+        elapsed = round((time.monotonic() - started) * 1000)
+        return f"Started and played {board.san(move)} in {elapsed:,} ms"
 
     def start(self, request: dict[str, Any]) -> str:
         specs = load_registry(self.registry_path)
@@ -184,6 +285,7 @@ class Lab:
                 ("increment_ms", 100, 0, 60_000),
                 ("ply_cap", 600, 20, 600),
                 ("seed", 42, 0, 2**31 - 1),
+                ("parallel", 1, 1, 16),
             )
         }
         if any(chess.Board(o.fen).ply() >= limits["ply_cap"] for o in openings):
@@ -215,14 +317,11 @@ class Lab:
                 "engines": {key: specs[key].data() for key in selected},
                 "environment": {
                     "python": sys.version,
-                    "platform": platform.platform(),
-                    "machine": platform.machine(),
-                    "processor": platform.processor(),
-                    "host": platform.node(),
+                    **machine_description(),
                     "logical_cpus": os.cpu_count(),
                     "packages": runtime_versions(),
                     "chess": chess.__version__,
-                    "parallel_games": 1,
+                    "parallel_games": limits["parallel"],
                     "platform_container": False,
                 },
                 "harness_sha256": {p.name: file_hash(p) for p in (ROOT / "harness").glob("*.py")},
@@ -231,13 +330,46 @@ class Lab:
                 },
                 "statistics_note": "Exploratory public openings; no auto-promotion or Elo claim",
             }
-            self.live_game = None
-            self.trace = None
+            self.live.clear()
             self.stop_requested.clear()
             self._save()
             self.worker = threading.Thread(target=self._run, name="chesslab-matches", daemon=True)
             self.worker.start()
             return run_id
+
+    def resume(self, run_id: str) -> str:
+        """Carry on with an experiment that stopped early, keeping the games already played."""
+        with self.lock:
+            if self.worker is not None and self.worker.is_alive():
+                raise ValueError("A batch is already running")
+            if self.sparring is not None:
+                if not self.sparring.finished():
+                    raise ValueError("Finish or leave your game before resuming a batch")
+                self.sparring.close()
+                self.sparring = None
+            run = self._manifest(run_id)
+            if run["status"] in {"preparing", "running", "stopping"}:
+                raise ValueError("That experiment is still going")
+            left = [game for game in run["games"] if game["status"] != "completed"]
+            if not left:
+                raise ValueError("Every game in that experiment has been played")
+            for game in left:
+                # A game that was cut off never wrote a record, so it is played again whole.
+                game.update(status="queued", result=None, termination=None, plies=0)
+            run["status"] = "preparing"
+            run.pop("error", None)
+            run.pop("finished_at", None)
+            run["resumed_at"] = time.time()
+            self.active = run
+            self.live.clear()
+            self.stop_requested.clear()
+            self._save()
+            self.worker = threading.Thread(target=self._run, name="chesslab-matches", daemon=True)
+            self.worker.start()
+            return run_id
+
+    def remaining(self, run: dict[str, Any]) -> int:
+        return sum(1 for game in run["games"] if game["status"] != "completed")
 
     def stop(self) -> None:
         with self.lock:
@@ -257,58 +389,19 @@ class Lab:
         directory = self.data_dir / run["id"]
         try:
             for key, spec in list(run["engines"].items()):
+                if "sha256" in spec:
+                    # A resumed run keeps the build it already played. Refreezing from the
+                    # working tree would let the second half of a batch be different code.
+                    if spec["kind"] == "python" and not Path(spec["frozen_path"]).is_dir():
+                        raise ValueError(f"The frozen build for {spec['name']} is gone")
+                    continue
                 frozen = freeze(EngineSpec(**spec), directory / "builds" / key)
                 with self.lock:
                     run["engines"][key] = frozen
             with self.lock:
                 run["status"] = "stopping" if self.stop_requested.is_set() else "running"
                 self._save()
-            limits = run["limits"]
-            for game in run["games"]:
-                if self.stop_requested.is_set():
-                    break
-                trace = Trace(game["opening"]["fen"], limits["base_ms"], limits["increment_ms"])
-                white = make_player(
-                    run["engines"][game["white"]], game["seed"], trace, sys.executable
-                )
-                black = make_player(
-                    run["engines"][game["black"]], game["seed"], trace, sys.executable
-                )
-                with self.lock:
-                    game["status"] = "running"
-                    self.live_game, self.trace, self.players = game, trace, [white, black]
-                    self._save()
-                outcome = play_match(
-                    white,
-                    black,
-                    limits["base_ms"],
-                    limits["increment_ms"],
-                    limits["ply_cap"],
-                    game["opening"]["fen"],
-                )
-                if self.closing.is_set():
-                    raise RuntimeError("Server shutdown interrupted this game; it is not scored")
-                frames = replay(outcome.pgn, limits["base_ms"], limits["increment_ms"])
-                with self.lock:
-                    game.update(
-                        status="completed",
-                        result=outcome.result,
-                        termination=outcome.termination,
-                        plies=len(frames) - 1,
-                    )
-                    detail = {
-                        **game,
-                        "frames": frames,
-                        "pgn": outcome.pgn,
-                        "engine_info": trace.engine_info,
-                        "logs": {"white": white.stderr_log, "black": black.stderr_log},
-                    }
-                    write_json(directory / "games" / f"{game['id']}.json", detail)
-                    (directory / "games" / f"{game['id']}.pgn").write_text(
-                        outcome.pgn, encoding="utf-8"
-                    )
-                    self.players = []
-                    self._save()
+            self._play_all(run, directory)
             with self.lock:
                 # External binaries/assets cannot be frozen cheaply; invalidate if edited.
                 for spec in run["engines"].values():
@@ -323,15 +416,109 @@ class Lab:
             with self.lock:
                 run["status"] = "interrupted" if self.closing.is_set() else "failed"
                 run["error"] = f"{type(error).__name__}: {error}"
-                if self.live_game is not None and self.live_game["status"] == "running":
-                    self.live_game["status"] = "interrupted"
+                for entry in self.live.values():
+                    if entry["game"]["status"] == "running":
+                        entry["game"]["status"] = "interrupted"
                 self._save()
         finally:
-            for player in self.players:
-                player.stop()
-            self.players = []
+            self._release()
             if self.closing.is_set():
                 self.workspace_lock.close()
+
+    def _play_all(self, run: dict[str, Any], directory: Path) -> None:
+        """Hand the queued games to a pool. One worker is the sequential behaviour."""
+        pending = [game for game in run["games"] if game["status"] != "completed"]
+        workers = max(1, min(int(run["limits"].get("parallel", 1)), len(pending) or 1))
+        if workers == 1:
+            for game in pending:
+                if self.stop_requested.is_set():
+                    return
+                self._play_one(run, directory, game)
+            return
+        queue: deque[dict[str, Any]] = deque(pending)
+
+        def take() -> None:
+            while not self.stop_requested.is_set():
+                with self.lock:
+                    game = queue.popleft() if queue else None
+                if game is None:
+                    return
+                self._play_one(run, directory, game)
+
+        threads = [
+            threading.Thread(target=take, name=f"chesslab-game-{index}", daemon=True)
+            for index in range(workers)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+    def _play_one(self, run: dict[str, Any], directory: Path, game: dict[str, Any]) -> None:
+        limits = run["limits"]
+        trace = Trace(game["opening"]["fen"], limits["base_ms"], limits["increment_ms"])
+        white = make_player(run["engines"][game["white"]], game["seed"], trace, sys.executable)
+        black = make_player(run["engines"][game["black"]], game["seed"], trace, sys.executable)
+        with self.lock:
+            game["status"] = "running"
+            game["started_at"] = time.time()
+            self.live[game["id"]] = {"game": game, "trace": trace, "players": [white, black]}
+            self._save()
+        try:
+            outcome = play_match(
+                white,
+                black,
+                limits["base_ms"],
+                limits["increment_ms"],
+                limits["ply_cap"],
+                game["opening"]["fen"],
+            )
+            if self.closing.is_set():
+                raise RuntimeError("Server shutdown interrupted this game; it is not scored")
+            frames = replay(outcome.pgn, limits["base_ms"], limits["increment_ms"])
+            with self.lock:
+                game.update(
+                    status="completed",
+                    result=outcome.result,
+                    termination=outcome.termination,
+                    plies=len(frames) - 1,
+                    finished_at=time.time(),
+                )
+                detail = {
+                    **game,
+                    "frames": frames,
+                    "pgn": outcome.pgn,
+                    "engine_info": trace.engine_info,
+                    "logs": {"white": white.stderr_log, "black": black.stderr_log},
+                }
+                write_json(directory / "games" / f"{game['id']}.json", detail)
+                (directory / "games" / f"{game['id']}.pgn").write_text(
+                    outcome.pgn, encoding="utf-8"
+                )
+                self._save()
+        except Exception as error:
+            if self.closing.is_set():
+                raise
+            # One game that could not be played does not throw away the rest of the batch.
+            with self.lock:
+                game.update(status="failed", result=None, termination="lab_error", plies=0)
+                run.setdefault("game_errors", {})[game["id"]] = f"{type(error).__name__}: {error}"
+                self._save()
+        finally:
+            with self.lock:
+                self.live.pop(game["id"], None)
+            for player in (white, black):
+                with suppress(OSError, ValueError):
+                    player.stop()
+
+    def _release(self) -> None:
+        with self.lock:
+            entries = list(self.live.values())
+            self.live.clear()
+        for entry in entries:
+            for player in entry["players"]:
+                with suppress(OSError, ValueError):
+                    player.stop()
 
     # ── sparring: one game you play yourself, never scored ─────────────────────────────────
 
@@ -461,6 +648,7 @@ class Lab:
                 {
                     "runs": runs,
                     "run": run,
+                    "remaining": self.remaining(run) if run else 0,
                     "busy": bool(self.worker and self.worker.is_alive()),
                     "playing": self.sparring is not None,
                 }
@@ -475,17 +663,12 @@ class Lab:
             if path.exists():
                 data: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
                 return data
-            if (
-                self.active
-                and self.active["id"] == run_id
-                and self.live_game
-                and self.live_game["id"] == game_id
-                and self.trace
-            ):
-                # Only the worker appends immutable frames; taking a slice is atomic in CPython.
+            entry = self.live.get(game_id)
+            if self.active and self.active["id"] == run_id and entry:
+                # Only that game's worker appends frames; taking a slice is atomic in CPython.
                 return {
-                    **copy.deepcopy(self.live_game),
-                    "frames": self.trace.frames[:],
+                    **copy.deepcopy(entry["game"]),
+                    "frames": entry["trace"].frames[:],
                     "pgn": None,
                 }
             game = next(game for game in run["games"] if game["id"] == game_id)
@@ -500,10 +683,8 @@ class Lab:
         if self.sparring is not None:
             self.sparring.close()
             self.sparring = None
-        # Shutdown interrupts the active game; it never contributes a score.
-        for player in self.players[:]:
-            with suppress(OSError, ValueError):
-                player.stop()
+        # Shutdown interrupts whatever is being played; none of it contributes a score.
+        self._release()
         if self.worker is not None:
             self.worker.join(timeout=2)
         if self.worker is None or not self.worker.is_alive():

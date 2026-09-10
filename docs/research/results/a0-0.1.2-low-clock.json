@@ -1,0 +1,331 @@
+{
+  "version": "0.1.2",
+  "method": "Direct agent call with a 45 ms increment estimate; includes coarse local referee-clock measurement but excludes IPC",
+  "rows": [
+    {
+      "repeat": 0,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 61,
+      "precise_elapsed_ms": 31.20279998984188,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 62,
+      "precise_elapsed_ms": 32.17860002769157,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 63,
+      "precise_elapsed_ms": 33.23500003898516,
+      "referee_clock_elapsed_ms": 32.00000000651926,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 75,
+      "precise_elapsed_ms": 45.260799990501255,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 100,
+      "precise_elapsed_ms": 54.79429999832064,
+      "referee_clock_elapsed_ms": 61.999999976251274,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 150,
+      "precise_elapsed_ms": 66.30709994351491,
+      "referee_clock_elapsed_ms": 63.000000023748726,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 61,
+      "precise_elapsed_ms": 31.172399991191924,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 62,
+      "precise_elapsed_ms": 32.249499985482544,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 63,
+      "precise_elapsed_ms": 33.24449999490753,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 75,
+      "precise_elapsed_ms": 45.288999972399324,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 100,
+      "precise_elapsed_ms": 39.77269999450073,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 0,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 150,
+      "precise_elapsed_ms": 46.97540000779554,
+      "referee_clock_elapsed_ms": 63.000000023748726,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 61,
+      "precise_elapsed_ms": 31.247499980963767,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 62,
+      "precise_elapsed_ms": 32.274299999699,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 63,
+      "precise_elapsed_ms": 33.422900014556944,
+      "referee_clock_elapsed_ms": 32.00000000651926,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 75,
+      "precise_elapsed_ms": 45.15810002340004,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 100,
+      "precise_elapsed_ms": 42.50899999169633,
+      "referee_clock_elapsed_ms": 45.999999972991645,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 150,
+      "precise_elapsed_ms": 44.91940001025796,
+      "referee_clock_elapsed_ms": 32.00000000651926,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 61,
+      "precise_elapsed_ms": 31.12440003314987,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 62,
+      "precise_elapsed_ms": 32.14500000467524,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 63,
+      "precise_elapsed_ms": 33.20980002172291,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 75,
+      "precise_elapsed_ms": 35.367899981793016,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 100,
+      "precise_elapsed_ms": 60.11139997281134,
+      "referee_clock_elapsed_ms": 63.000000023748726,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 1,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 150,
+      "precise_elapsed_ms": 37.21550002228469,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 61,
+      "precise_elapsed_ms": 31.357100000604987,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 62,
+      "precise_elapsed_ms": 32.18199999537319,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 63,
+      "precise_elapsed_ms": 33.138400001917034,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 75,
+      "precise_elapsed_ms": 35.31060001114383,
+      "referee_clock_elapsed_ms": 32.00000000651926,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 100,
+      "precise_elapsed_ms": 40.762700024060905,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+      "remaining_ms": 150,
+      "precise_elapsed_ms": 39.49210001155734,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 61,
+      "precise_elapsed_ms": 31.323399976827204,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 62,
+      "precise_elapsed_ms": 32.11089997785166,
+      "referee_clock_elapsed_ms": 31.000000017229468,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 63,
+      "precise_elapsed_ms": 33.1111999694258,
+      "referee_clock_elapsed_ms": 32.00000000651926,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 75,
+      "precise_elapsed_ms": 37.107700016349554,
+      "referee_clock_elapsed_ms": 30.999999959021807,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 100,
+      "precise_elapsed_ms": 50.757599994540215,
+      "referee_clock_elapsed_ms": 47.0000000204891,
+      "legal": true,
+      "within_clock": true
+    },
+    {
+      "repeat": 2,
+      "fen": "r1b1kbnr/pp3ppp/1qn1p3/2ppP3/3P4/2P2N2/PP3PPP/RNBQKB1R w KQkq - 3 6",
+      "remaining_ms": 150,
+      "precise_elapsed_ms": 62.450500030536205,
+      "referee_clock_elapsed_ms": 63.000000023748726,
+      "legal": true,
+      "within_clock": true
+    }
+  ],
+  "passed": true
+}

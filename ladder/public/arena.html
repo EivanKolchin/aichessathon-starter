@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Ladder · arena</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/"><span class="brand-mark">♞</span><span>Chess Ladder</span></a>
+  <span class="spacer"></span>
+  <span id="runners" class="muted small">Looking for runners…</span>
+  <a class="topbar-link" href="/">Catalogue</a>
+</header>
+
+<main class="arena-main">
+  <section class="panel">
+    <div class="agent-head">
+      <h2>Start an experiment</h2>
+      <span id="capacity" class="muted small"></span>
+    </div>
+    <p class="muted">
+      The Worker never plays a game. It holds the request until a runner asks for work, and that
+      machine plays it through the unchanged referee and posts the positions back here. What you
+      can choose below is what a runner has actually told us it can play.
+    </p>
+    <div class="fields">
+      <label>Name <input id="label" maxlength="100" placeholder="Overnight sweep" autocomplete="off"></label>
+      <label>Candidate <select id="candidate"></select></label>
+      <label class="wide">Opponents <span id="pool" class="muted small"></span></label>
+    </div>
+    <div id="opponents" class="opponent-grid"></div>
+    <div class="fields">
+      <label>Opening split <select id="split"><option value="dev">Development</option><option value="validation">Validation</option></select></label>
+      <label>Positions <select id="positions"><option value="2">2</option><option value="5" selected>5</option><option value="10">10</option><option value="all">All in split</option></select></label>
+      <label>Clock <select id="clock"><option value="2000,20">Smoke · 2s + 0.02s</option><option value="10000,100" selected>Development · 10s + 0.1s</option><option value="120000,500">Event · 120s + 0.5s</option></select></label>
+      <label>Games at once <select id="parallel"><option value="1" selected>1 · clocks comparable</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label>
+    </div>
+    <p id="queue-note" class="muted small"></p>
+    <p><button id="queue" type="button" class="primary" disabled>Queue it</button></p>
+    <p id="queue-status" class="status" hidden></p>
+  </section>
+
+  <section class="panel">
+    <div class="agent-head">
+      <h2>Experiments</h2>
+      <label class="check"><input id="follow" type="checkbox" checked> Follow the live game</label>
+    </div>
+    <div id="runs" class="run-list"></div>
+  </section>
+
+  <section id="viewer" class="panel" hidden>
+    <div class="agent-head">
+      <h2 id="run-title">Run</h2>
+      <span id="run-meta" class="muted small"></span>
+    </div>
+    <div id="live-strip" class="live-strip" hidden></div>
+    <div class="arena-split">
+      <div>
+        <div class="player-row"><strong id="top-name">Black</strong><span id="top-clock" class="clock">—</span></div>
+        <div class="board-frame"><div id="board" class="board" role="img" aria-label="Chessboard"></div></div>
+        <div class="player-row"><strong id="bottom-name">White</strong><span id="bottom-clock" class="clock">—</span></div>
+        <p class="caption"><span id="position">Waiting for a position</span><button id="flip" type="button" class="link">Flip</button></p>
+      </div>
+      <div class="side">
+        <p id="outcome" class="outcome"></p>
+        <label>Game <select id="game-select"></select></label>
+        <div class="move-head"><span>#</span><span>White</span><span>Black</span></div>
+        <div id="moves" class="moves"></div>
+        <p><button id="stop-run" type="button" hidden>Stop after this game</button></p>
+      </div>
+    </div>
+    <h3>Results by opponent</h3>
+    <div class="table-wrap"><table><thead><tr><th>Opponent</th><th>W / D / L</th><th>Pairs</th><th>Pair score</th><th>Failures</th></tr></thead><tbody id="results"></tbody></table></div>
+    <p id="contended" class="contended" hidden></p>
+  </section>
+</main>
+
+<script type="module" src="/arena.js"></script>
+</body>
+</html>

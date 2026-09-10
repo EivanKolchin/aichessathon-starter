@@ -8,6 +8,7 @@ from chesslab import ladder
 from chesslab.compare import compare
 from chesslab.lab import Lab
 from chesslab.registry import ROOT, load_registry, parse, store
+from chesslab.runner import run_runner
 from chesslab.server import Server
 
 
@@ -53,11 +54,24 @@ def main() -> None:
     comparison.add_argument("baseline", type=Path)
     comparison.add_argument("candidate", type=Path)
     share = sub.add_parser("ladder", help="Share agents through the upload catalogue")
+    offer = sub.add_parser("runner", help="Play experiments the site queued, on this machine")
+    # Not platform.node() as a default: argparse evaluates defaults while the parser is being
+    # built, and on Windows that name comes from WMI, which can block. It is resolved later.
+    offer.add_argument("--name", default="", help="How the site names this machine")
+    offer.add_argument("--once", action="store_true", help="Take at most one job, then exit")
     # Carried by every subcommand, so the address goes where people expect: `ladder pull --url`.
     options = argparse.ArgumentParser(add_help=False)
     options.add_argument("--url", help="Address of the ladder Worker; remembered after first use")
     options.add_argument("--token", help="Ladder token, or set CHESSLAB_LADDER_TOKEN")
     options.add_argument("--uploads", type=Path, default=ROOT / ".chesslab" / "uploads")
+    for parser_needing_address in (offer,):
+        parser_needing_address.add_argument("--url", help="Address of the ladder Worker")
+        parser_needing_address.add_argument(
+            "--token", help="Ladder token, or CHESSLAB_LADDER_TOKEN"
+        )
+        parser_needing_address.add_argument(
+            "--uploads", type=Path, default=ROOT / ".chesslab" / "uploads"
+        )
     shared = share.add_subparsers(dest="ladder_action", required=True)
     shared.add_parser("list", parents=[options], help="Show what the catalogue holds")
     shared.add_parser("pull", parents=[options], help="Register catalogue agents as opponents")
@@ -73,6 +87,13 @@ def main() -> None:
             json.loads(args.candidate.read_text(encoding="utf-8")),
         )
         print(json.dumps(result, indent=2))
+        return
+    if args.action == "runner":
+        args.data_dir = args.data_dir.with_name("runner")
+        try:
+            run_runner(args)
+        except (ValueError, OSError) as error:
+            raise SystemExit(str(error)) from error
         return
     if args.action == "ladder":
         try:

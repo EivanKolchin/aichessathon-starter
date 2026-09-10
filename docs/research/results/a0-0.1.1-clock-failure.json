@@ -1,0 +1,67 @@
+{
+  "run": "20260910-111806-e76110",
+  "status": "interrupted",
+  "summary": [
+    {
+      "opponent": "a0-001",
+      "games": 15,
+      "scheduled": 20,
+      "wins": 6,
+      "draws": 1,
+      "losses": 8,
+      "candidate_failures": 1,
+      "void": 0,
+      "pairs": 7,
+      "score": 0.4642857142857143,
+      "interval": [
+        0,
+        0.9775998379756502
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 5
+    }
+  ],
+  "failures": [
+    {
+      "game": "g00001",
+      "loser": "candidate",
+      "termination": "flag",
+      "final_frame": {
+        "fen": "8/8/2K3k1/5pr1/8/8/8/8 w - - 0 61",
+        "san": "f5",
+        "uci": "f7f5",
+        "white_ms": 62.0,
+        "black_ms": 178.0,
+        "elapsed_ms": 78.0
+      }
+    },
+    {
+      "game": "g00007",
+      "loser": "a0-001",
+      "termination": "flag",
+      "final_frame": {
+        "fen": "7Q/P7/8/1k6/7P/4K1B1/8/8 b - - 0 59",
+        "san": "a7",
+        "uci": "a6a7",
+        "white_ms": 61.0,
+        "black_ms": 62.0,
+        "elapsed_ms": 62.0
+      }
+    },
+    {
+      "game": "g00014",
+      "loser": "a0-001",
+      "termination": "flag",
+      "final_frame": {
+        "fen": "8/1r3k2/6p1/2K1B2p/5P1P/8/8/8 w - - 16 67",
+        "san": "Rb7",
+        "uci": "b6b7",
+        "white_ms": 62.0,
+        "black_ms": 100.0,
+        "elapsed_ms": 47.0
+      }
+    }
+  ],
+  "cause": "Local Python 3.12 GetTickCount64 monotonic resolution 0.015625 s exceeded old 12 ms minimum reserve",
+  "resolution": "A0 0.1.2 uses perf_counter, at least 30 ms reserve, checks each node for hard budgets below 250 ms"
+}

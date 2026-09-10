@@ -15,6 +15,7 @@ import chess
 import chess.svg
 
 from chesslab.lab import Lab
+from harness.rules import MAX_UNZIPPED_BYTES
 
 STATIC = Path(__file__).with_name("static")
 
@@ -99,6 +100,18 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _read(self, length: int) -> bytes:
+        """Read the whole body; a large upload does not arrive in one go."""
+        chunks: list[bytes] = []
+        remaining = length
+        while remaining > 0:
+            chunk = self.rfile.read(min(remaining, 1 << 20))
+            if not chunk:
+                raise ValueError("The upload ended early")
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        return b"".join(chunks)
+
     def _json(self, data: Any, status: int = 200) -> None:
         self._send(json.dumps(data, allow_nan=False).encode(), "application/json", status)
 
@@ -156,8 +169,16 @@ class Handler(BaseHTTPRequestHandler):
         ):
             self._json({"error": "Reload Chess Lab before making changes"}, 403)
             return
+        route = urlsplit(self.path)
         try:
             length = int(self.headers.get("Content-Length", "0"))
+            # A dropped agent arrives as the zip itself, so it gets the event's unzipped cap.
+            if route.path == "/api/agents":
+                if not 0 < length <= MAX_UNZIPPED_BYTES:
+                    raise ValueError(f"An agent upload must be 1 to {MAX_UNZIPPED_BYTES:,} bytes")
+                fields = {key: value[0] for key, value in parse_qs(route.query).items()}
+                self._json(self.server.lab.adopt(self._read(length), fields), 201)
+                return
             if not 0 < length <= 65536:
                 raise ValueError("Request body must be between 1 and 65,536 bytes")
             request = json.loads(self.rfile.read(length))
@@ -165,6 +186,8 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("Request must be a JSON object")
             if self.path == "/api/run":
                 self._json({"id": self.server.lab.start(request)}, 201)
+            elif self.path == "/api/resume":
+                self._json({"id": self.server.lab.resume(str(request.get("run", "")))}, 201)
             elif self.path == "/api/stop":
                 self.server.lab.stop()
                 self._json({"ok": True})

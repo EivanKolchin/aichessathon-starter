@@ -14,6 +14,38 @@ browser ──drop zip──▶ Worker ──▶ R2 (builds) + D1 (catalogue)
    python -m chesslab ladder pull ──▶ .chesslab/uploads/<id>/ ──▶ Chess Lab registry
 ```
 
+## Running experiments from the site
+
+The Worker still never plays a game. **Arena** queues an experiment; a runner on somebody's
+machine claims it, plays it through the unchanged referee, and posts the positions back as they
+are produced. The browser only ever talks to the Worker.
+
+```
+browser ──queue──▶ Worker ──job──▶ chesslab runner ──plays locally──▶ frames, results ──▶ Worker ──▶ browser
+```
+
+Start a runner on the machine that should do the work:
+
+```bash
+python -m chesslab runner --url https://your-worker.example.com
+```
+
+It dials out only: no inbound port, no certificate on localhost, no CORS. It claims one job at a
+time, pulls any build it does not already have, and reports positions, results and the manifest.
+The claim doubles as a heartbeat and carries the engines and positions that machine can play, so
+the site only ever offers opponents a runner actually has. With no runner online, queued
+experiments simply wait.
+
+Two things this design does not give you, and should not be read as giving you:
+
+- **Games run on whoever started them.** A run measures that machine. The manifest already
+  records the platform, the core count and how many games were in flight; the runner adds its
+  own name, and the site shows it on every run. A table across two machines is indicative, not
+  authoritative.
+- **Uploaded agents run as ordinary processes on that machine.** Sandboxing them
+  (`docker --network none --read-only --cpus 1 --memory 2g`) is the right answer and is not done
+  here yet.
+
 ## One-time setup
 
 Everything below runs from this `ladder/` directory. Nothing is created until you run it.
@@ -31,13 +63,20 @@ npx wrangler d1 create chess-ladder
 npx wrangler r2 bucket create chess-ladder-agents
 ```
 
-Create the table, set the shared token, and deploy:
+Create the tables, set the shared token, and deploy. `schema.sql` holds the catalogue and the
+experiment tables; it is safe to re-run, but it only creates - if you change a column later you
+have to `ALTER TABLE` yourself:
 
 ```bash
 npx wrangler d1 execute chess-ladder --remote --file=./schema.sql
 npx wrangler secret put LADDER_TOKEN
 npx wrangler deploy
 ```
+
+Before the real deploy, `npx wrangler deploy --dry-run` bundles the Worker and prints the
+bindings it resolved without touching your account. `env.DB`, `env.BUCKET` and `env.ASSETS`
+all have to appear in that table; the Worker serves every page through `env.ASSETS`, so a
+missing assets binding is a blank site rather than a build error.
 
 `wrangler secret put` prompts for a value. Generate one with
 `python -c "import secrets; print(secrets.token_urlsafe(32))"` and give the same string to
