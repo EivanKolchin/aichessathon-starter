@@ -28,6 +28,8 @@ now runs the original A0 engine in `a0/`. The event `harness/` remains unchanged
 - A repeated fixed-node comparison tool with frozen builds, raw timings and exact search checks.
 - A read-only export auditor for legal replay, source hashes, failure positions and corrected
   reliability counts, including clock failures scored as draws.
+- A history-preserving position probe with pinned Stockfish node budgets, conditional root
+  verification, source/engine hashes and frozen A0 cProfile measurements.
 
 The lab is a working evaluator. Its small diagnostic opponents are not trained neural engines.
 A0's initial league is documented in `a0-results.md`; the latest speed and reliability study,
@@ -69,18 +71,32 @@ and external engines.
 - Submission packaging passed both extracted-archive smoke games. The zip contains `agent.py`,
   the four `a0` Python modules and their README: 35,070 bytes uncompressed. All packaged files
   were verified byte-for-byte identical to the current source.
+- The position probe completed 24 cases from six supplied Stockfish games: 127 UCI queries and
+  57.68 million reported nodes. Fifteen cases changed root move across budgets, which is not an
+  error count or a strength result. Full evidence and interpretation are in
+  `stockfish-budget-probe-results.md`.
+- After adding the probe, six focused probe/auditor tests passed, Ruff passed repository-wide
+  and mypy passed for 42 source files. The five engine Python files still match the profiled
+  0.1.2 checkpoint, and all six submission files still match their current source.
 
 Local results and build copies live in `.chesslab/`, which is excluded from version control.
 See `chesslab/README.md` for commands, limitations and how to register additional engine families.
 
 ## Next milestone
 
-Keep 0.1.2 as the reference. Profile the quiescence work in the supplied Stockfish loss positions,
-then compare individual overhead or search-policy changes against the frozen build. Measure
-tactical correctness, search effort, time management and full paired games separately. The
-current Python engine usually reached only depth 2–3 in the retained Stockfish logs. An original
-compiled search/move-generation backend is the next larger architectural experiment, followed
-by A1's independently trained evaluator. Mating conversion deserves a separate development suite.
+Keep 0.1.2 as the reference. The completed position profiles attribute approximately 58% of
+instrumented self time to python-chess routines; this is not a forecast of achievable speedup.
+Build an original compiled board/search experiment, preserving the existing evaluator initially
+and using python-chess as a differential correctness oracle. Measure uninstrumented performance,
+tactical correctness, history/draw handling, deadlines and full paired games separately before
+promoting it. Follow with A1's independently trained evaluator. Mating conversion deserves a
+separate development suite.
+
+The next research branches are a diverse opponent curriculum, legal-trajectory error mining,
+an independently trained response model and selective verification. Each needs an equal-cost
+control and held-out complete-game evidence. The mechanisms, failure criteria and ordered
+milestones are described in `stockfish-exploitation-roadmap.md`; no robust Stockfish exploit
+has yet been demonstrated.
 
 The architecture-search and self-improvement stages will consume the lab's headless JSON
 requests and matched run records. Training, genetic/evolutionary proposal generation and

@@ -350,6 +350,30 @@ positions and recalculates the opponent summaries. It treats truncated search lo
 samples. Choose a new output file for each audit. Current engine measurements and the supplied
 70-game audit are documented in [the 0.1.2 report](../docs/research/a0-0.1.2-results.md).
 
+To profile a frozen A0 build and screen a separately selected Stockfish executable at several
+node budgets:
+
+```powershell
+.venv\Scripts\python.exe -m chesslab.experiments.position_probe `
+  --run-dir C:/Users/eivan/Downloads/20260910-111002-497d4d `
+  --engine .chesslab/engines/stockfish19/extracted/stockfish/stockfish-windows-x86-64-universal.exe `
+  --out .chesslab/studies/stockfish-budget-probe-next
+```
+
+Choose a new output directory. Defaults sample accepted plies 8, 9, 24 and 25 from completed
+games against `stockfish`, including both players' turns. PGN history and frame consistency are
+verified before analysis. The command runs the explicitly selected local executable and the
+trusted frozen build supplied by `--a0-build`; it never executes exported engine commands.
+The UCI configuration is Stockfish-specific. The default A0 build is checkpoint 0.1.2.
+
+The report records 1k/10k/100k-node probes, 1M-node verification and restricted-root comparisons
+when choices differ, plus A0's instrumented 5k-node profiles. It preserves requested and actual
+node counts, engine/source hashes, PVs and raw cProfile files. Search state resets between UCI
+queries; full recorded board history remains available. Disagreement is a screening signal,
+not a proven error or a complete-game strength result. See the completed
+[24-position study](../docs/research/stockfish-budget-probe-results.md) and the
+[opponent-exploitation roadmap](../docs/research/stockfish-exploitation-roadmap.md).
+
 1. Establish an original classical candidate and a fixed reference checkpoint. Keep a saved JSON
    experiment protocol with full clocks/caps and pinned opponent versions.
 2. Use the development pool for cheap screening: legality/failures first, then full-game score by
@@ -365,9 +389,10 @@ samples. Choose a new output file for each audit. Current engine measurements an
    final opening set. Implement a preregistered paired testing or SPRT protocol before automating
    promotion. Keep final-set access and evaluator editing outside any proposal-generating agent.
 
-Training, genetic search, automated promotion, position labelling, rating estimation and remote
-workers are intentionally future modules. The current system provides their callable evaluator
-and durable evidence. The longer-term design is in `docs/research/stockfish-research-plan.md`.
+Training, genetic search, automated promotion, large-scale training-data labelling, rating
+estimation and remote workers are future modules. The current system provides their callable
+evaluator, a small position-screening tool and durable evidence. The longer-term design is in
+`docs/research/stockfish-research-plan.md`.
 
 ```mermaid
 flowchart LR

@@ -1,5 +1,11 @@
 # Research Programme for an Original Chess Engine
 
+**Implementation update, 10 September 2026:** the lab now includes a completed
+[24-position Stockfish budget study](stockfish-budget-probe-results.md). The
+[exploitation roadmap](stockfish-exploitation-roadmap.md) prioritises original compiled search,
+opponent-response modelling and independent verification using that evidence. It distinguishes
+budget-sensitive decisions from demonstrated full-game exploits.
+
 **Recommendation.** Build an original, fast search engine and an automated research system that improves it through controlled experiments. For a single CPU core, the leading initial candidate is alpha-beta search with an inexpensive incremental neural evaluator. A learned move-ordering model and a controller that allocates extra search are the first architectural extensions to test. Maintain a separate policy/value tree-search branch for accelerator deployment. Use genetic and evolutionary methods to search bounded design choices, and use coding agents to propose testable algorithm changes.
 
 This is an evidence-based starting hypothesis, not a finding that this architecture will defeat Stockfish. The programme should be capable of rejecting that hypothesis. Its central asset is a trustworthy, economical experiment loop: stronger claims and more elaborate optimisation are justified only as that loop produces evidence.

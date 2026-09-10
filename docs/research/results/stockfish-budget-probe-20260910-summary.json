@@ -1,0 +1,619 @@
+{
+  "schema": "stockfish-budget-screening-summary/v1",
+  "report_sha256": "7a8357bb3def5b5f0f6125ee504723dd7fc853fb157ecb31d10a61e0e3b35004",
+  "engine_identity": {
+    "name": "Stockfish 19",
+    "author": "the Stockfish developers (see AUTHORS file)"
+  },
+  "engine_sha256": "45bc8e4969147db9c2eb533810637994619bff0eacc81ccfd9854394901bcbd0",
+  "case_count": 24,
+  "source_game_count": 6,
+  "source_opening_count": 3,
+  "source_side_counts": {
+    "candidate": 12,
+    "stockfish": 12
+  },
+  "changed_at_any_budget": 15,
+  "disagreements_with_reference_by_nodes": {
+    "1000": 10,
+    "10000": 7,
+    "100000": 4
+  },
+  "near_balance_threshold_cp": 150,
+  "near_balance_cases": 9,
+  "query_count": 127,
+  "actual_query_nodes": 57684302,
+  "query_elapsed_seconds": 192.63770940026734,
+  "a0_instrumented_self_seconds": 29.5106768,
+  "a0_self_time_modules": {
+    "python-chess": {
+      "seconds": 17.008232200000005,
+      "percent": 57.63416513714117
+    },
+    "builtins/other": {
+      "seconds": 3.5797877000000002,
+      "percent": 12.13048322903933
+    },
+    "a0/search": {
+      "seconds": 5.397647100000001,
+      "percent": 18.290489020570348
+    },
+    "a0/evaluation": {
+      "seconds": 3.5250098000000007,
+      "percent": 11.944862613249185
+    }
+  },
+  "a0_self_time_buckets": {
+    "other": 15.529406000000002,
+    "move_generation_and_legality": 5.7343806,
+    "move_ordering": 1.0951418,
+    "board_updates": 2.8483109000000004,
+    "evaluation_and_incremental_updates": 3.5250098000000003,
+    "draw_detection": 0.7784277
+  },
+  "profile_sha256": {
+    "g00007-p008.prof": "a7aad02bb3e5dd1a8ece858e9d246ee13eb51a9674be42f2210f35563d95c2e1",
+    "g00007-p009.prof": "833f9bf3ce3ee1c3a086d7f275dd9f9b1dddab2d13c29e22a8c0cabab6cfadad",
+    "g00007-p024.prof": "c21d2247e20f0dd8a117ff229bc40abfa215635e66f7ecd57418dc0944e9f760",
+    "g00007-p025.prof": "52e1055f9cb6d3c5de3aa72b934a6ab927ec9666dd4f387d4acd03a76c1ad94b",
+    "g00008-p008.prof": "67fce542ce8bca5d44e710c8a40c1dd7b854c82ac181293ff99cf7863e73b698",
+    "g00008-p009.prof": "090b23d40726807681977059f98a529412b05b77cd4cf9dfe5b55bf1dc18dbe1",
+    "g00008-p024.prof": "bb3ec4d171844cf96e5344a4da4b6e84b78a1b348af1f242c65e9ad099f3ae94",
+    "g00008-p025.prof": "bc3684a4366b666cf8a8df639c7e17402f4dbf0f96e5ead7129084572a04ce2b",
+    "g00019-p008.prof": "59c83f0ffd5d9caa44798b3efb202f7edf940f2cbe1d85dccbd457cc80b92c1c",
+    "g00019-p009.prof": "498602c88795e987daf147cb3f52e190dd53d2925b931c01451c9125fbd11fd5",
+    "g00019-p024.prof": "ceafb37e3c36097b53d6b32e0f4e46d0015882c238712f36058a798bf19e7f20",
+    "g00019-p025.prof": "502a4979cd53c7a71560045da953cab5aa8869ccb7b9e50d0c589a4e9d8a5173",
+    "g00020-p008.prof": "e71e10318409cf8a43302eddae74b5e9553b71d3bbabd42d8bb66e055a3e7c82",
+    "g00020-p009.prof": "b903185d410b2aa3bde5107815b6d830cb545cdec6d722d317b49894d053288b",
+    "g00020-p024.prof": "4df2d0ca53d6c8bc5a38da4519f69ddfe82ddd4bed064533bf8d1e5e0043eba7",
+    "g00020-p025.prof": "d5a5052db6c6d7e9df41c1f7913ac1897044ef9a5a39662ef485cc42515616da",
+    "g00047-p008.prof": "1868fe96230b227f9fcff60ef162ecea9b0550d1b779ba9cb0ffe7db34392833",
+    "g00047-p009.prof": "f8b309274758edd61e96ce90aad92544ce7e7def7cffec69c2984343bc38c2d8",
+    "g00047-p024.prof": "fc3aaf0f0d913a4faa60d3cada4c4ac8187903ec12e75e297d28b08d93b6c3fd",
+    "g00047-p025.prof": "4336f2b014de98c449acba93693ddda1bd1b8fc360d2acad77e42fdc0acafad2",
+    "g00048-p008.prof": "2e9c7486bf7f699abee34faed8ab789ab8b57946cf4678c8ca321bf5400125ec",
+    "g00048-p009.prof": "847e377bebf66a0921f248bd8a7bd07624082d6070e1b33be41837b59fcd5998",
+    "g00048-p024.prof": "8db17f61f1c868c471e775103cae622e853ce7be716458c95630dc40567d2107",
+    "g00048-p025.prof": "ac8de281fcbb0f28515767c58cfd2df3d8ddaf557c176e656fa214ef2400c3aa"
+  },
+  "limitations": [
+    "Development positions from played games; not a random sample or a strength test.",
+    "Fixed-node search is not full-clock game time management.",
+    "Higher-budget and restricted-root scores are estimates, not ground truth.",
+    "Move disagreement alone does not establish a mistake or a forceable exploit.",
+    "A0 timings include cProfile overhead; self-time buckets are approximate categories.",
+    "Adjacent samples from the same six games are correlated; no statistical error rate is estimated.",
+    "Near-balance and conditional score spans are analysis filters chosen after collection, not preregistered tests.",
+    "Raw profiles are local trusted cProfile artifacts; module shares are instrumented self time, not speedup forecasts."
+  ],
+  "cases": [
+    {
+      "id": "g00007-p008",
+      "opening": "bird",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "c3e4",
+      "screening_moves": {
+        "1000": "c3e2",
+        "10000": "c3e2",
+        "100000": "c3e2"
+      },
+      "reference_move": "c3e2",
+      "reference_cp": -100,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00007-p009",
+      "opening": "bird",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "f6d5",
+      "screening_moves": {
+        "1000": "f6e4",
+        "10000": "f6d5",
+        "100000": "f6d5"
+      },
+      "reference_move": "f6d5",
+      "reference_cp": 122,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "f6d5": 121,
+        "f6e4": 62
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 59,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00007-p024",
+      "opening": "bird",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "b3b4",
+      "screening_moves": {
+        "1000": "b3b4",
+        "10000": "b3b4",
+        "100000": "b3b4"
+      },
+      "reference_move": "b3b4",
+      "reference_cp": -795,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00007-p025",
+      "opening": "bird",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "b8a6",
+      "screening_moves": {
+        "1000": "a7a5",
+        "10000": "b8a6",
+        "100000": "b8a6"
+      },
+      "reference_move": "b8a6",
+      "reference_cp": 775,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "a7a5": 716,
+        "b8a6": 780
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 64,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00008-p008",
+      "opening": "bird",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "e1g1",
+      "screening_moves": {
+        "1000": "b1c3",
+        "10000": "e1g1",
+        "100000": "e1g1"
+      },
+      "reference_move": "e1g1",
+      "reference_cp": 51,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "b1c3": 22,
+        "e1g1": 34
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 12,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00008-p009",
+      "opening": "bird",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "d7c5",
+      "screening_moves": {
+        "1000": "d7c5",
+        "10000": "d7c5",
+        "100000": "b7b5"
+      },
+      "reference_move": "b7b5",
+      "reference_cp": -33,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "b7b5": -34,
+        "d7c5": -74
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 40,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00008-p024",
+      "opening": "bird",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "a3e7",
+      "screening_moves": {
+        "1000": "a3e7",
+        "10000": "a3e7",
+        "100000": "a3e7"
+      },
+      "reference_move": "c4c5",
+      "reference_cp": 609,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "a3e7": 521,
+        "c4c5": 634
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 113,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00008-p025",
+      "opening": "bird",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "f8e8",
+      "screening_moves": {
+        "1000": "f8f7",
+        "10000": "f8e8",
+        "100000": "f8e8"
+      },
+      "reference_move": "f8f7",
+      "reference_cp": -510,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "f8e8": -557,
+        "f8f7": -566
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 9,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00019-p008",
+      "opening": "reti",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "b2b4",
+      "screening_moves": {
+        "1000": "e1g1",
+        "10000": "b5a3",
+        "100000": "e1g1"
+      },
+      "reference_move": "e1g1",
+      "reference_cp": -140,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "b5a3": -175,
+        "e1g1": -142
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 33,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00019-p009",
+      "opening": "reti",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "a7a6",
+      "screening_moves": {
+        "1000": "a7a6",
+        "10000": "a7a6",
+        "100000": "a7a6"
+      },
+      "reference_move": "a7a6",
+      "reference_cp": 233,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00019-p024",
+      "opening": "reti",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "e3e5",
+      "screening_moves": {
+        "1000": "a2a4",
+        "10000": "e3e5",
+        "100000": "e3e5"
+      },
+      "reference_move": "e3e5",
+      "reference_cp": -832,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "a2a4": -912,
+        "e3e5": -826
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 86,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00019-p025",
+      "opening": "reti",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "f8e8",
+      "screening_moves": {
+        "1000": "f8e8",
+        "10000": "f8e8",
+        "100000": "f8e8"
+      },
+      "reference_move": "f8e8",
+      "reference_cp": 824,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00020-p008",
+      "opening": "reti",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "a4b5",
+      "screening_moves": {
+        "1000": "a4b5",
+        "10000": "a4b5",
+        "100000": "a4b5"
+      },
+      "reference_move": "a4b5",
+      "reference_cp": 189,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00020-p009",
+      "opening": "reti",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "c6b5",
+      "screening_moves": {
+        "1000": "f6d5",
+        "10000": "f6d5",
+        "100000": "f6d5"
+      },
+      "reference_move": "f6d5",
+      "reference_cp": -186,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00020-p024",
+      "opening": "reti",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "c2d2",
+      "screening_moves": {
+        "1000": "c2d2",
+        "10000": "c2d2",
+        "100000": "c2d2"
+      },
+      "reference_move": "c2d2",
+      "reference_cp": 473,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00020-p025",
+      "opening": "reti",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "b8d7",
+      "screening_moves": {
+        "1000": "b8c6",
+        "10000": "d5d4",
+        "100000": "b8c6"
+      },
+      "reference_move": "b8c6",
+      "reference_cp": -449,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "b8c6": -481,
+        "d5d4": -610
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 129,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00047-p008",
+      "opening": "qga",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "c1d2",
+      "screening_moves": {
+        "1000": "a2a4",
+        "10000": "d4c5",
+        "100000": "d1e2"
+      },
+      "reference_move": "d1e2",
+      "reference_cp": -8,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 3,
+      "restricted_cp": {
+        "a2a4": -22,
+        "d1e2": -11,
+        "d4c5": -10
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 12,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00047-p009",
+      "opening": "qga",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "b8d7",
+      "screening_moves": {
+        "1000": "f8e7",
+        "10000": "b8d7",
+        "100000": "f8e7"
+      },
+      "reference_move": "b8d7",
+      "reference_cp": 21,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "b8d7": 25,
+        "f8e7": 26
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 1,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00047-p024",
+      "opening": "qga",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "g1h2",
+      "screening_moves": {
+        "1000": "g1h2",
+        "10000": "g1h1",
+        "100000": "g1h2"
+      },
+      "reference_move": "g1h2",
+      "reference_cp": -1427,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "g1h2": -1564
+      },
+      "restricted_mates": {
+        "g1h1": -9
+      },
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00047-p025",
+      "opening": "qga",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "a5h5",
+      "screening_moves": {
+        "1000": "a5c7",
+        "10000": "a5h5",
+        "100000": "a5h5"
+      },
+      "reference_move": "a5h5",
+      "reference_cp": 1411,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "a5c7": -10,
+        "a5h5": 1413
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 1423,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00048-p008",
+      "opening": "qga",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "b2c3",
+      "screening_moves": {
+        "1000": "b2c3",
+        "10000": "b2c3",
+        "100000": "b2c3"
+      },
+      "reference_move": "b2c3",
+      "reference_cp": 138,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00048-p009",
+      "opening": "qga",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "b4c3",
+      "screening_moves": {
+        "1000": "b4c3",
+        "10000": "b4c3",
+        "100000": "b4e7"
+      },
+      "reference_move": "b4c3",
+      "reference_cp": -123,
+      "reference_mate": null,
+      "near_balance_filter": true,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "b4c3": -130,
+        "b4e7": -146
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 16,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00048-p024",
+      "opening": "qga",
+      "side_to_move_engine": "stockfish",
+      "recorded_next_move": "d1d8",
+      "screening_moves": {
+        "1000": "d1d8",
+        "10000": "d1d8",
+        "100000": "d1d8"
+      },
+      "reference_move": "d1d8",
+      "reference_cp": 827,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 1,
+      "restricted_cp": {},
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": null,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    },
+    {
+      "id": "g00048-p025",
+      "opening": "qga",
+      "side_to_move_engine": "candidate",
+      "recorded_next_move": "e8d8",
+      "screening_moves": {
+        "1000": "c6e4",
+        "10000": "a8d8",
+        "100000": "a8d8"
+      },
+      "reference_move": "a8d8",
+      "reference_cp": -828,
+      "reference_mate": null,
+      "near_balance_filter": false,
+      "different_root_moves": 2,
+      "restricted_cp": {
+        "a8d8": -838,
+        "c6e4": -1122
+      },
+      "restricted_mates": {},
+      "restricted_candidate_cp_span": 284,
+      "interpretation": "Estimated conditional scores, not exact regret or a verified exploit."
+    }
+  ]
+}
