@@ -69,7 +69,15 @@ npx wrangler d1 create chess-ladder
 npx wrangler r2 bucket create chess-ladder-agents
 ```
 
-The `database_id` it prints goes into the root `wrangler.toml`.
+The `database_id` it prints goes into the root `wrangler.toml`, replacing
+`PASTE_DATABASE_ID_FROM_WRANGLER_D1_CREATE`. **A deploy fails while that placeholder is still
+there**, with `binding DB of type d1 must have a valid database_id specified [code: 10021]`, and
+it fails after uploading the assets, so a successful-looking upload is not a successful deploy.
+If the database already exists, `npx wrangler d1 list` prints the id.
+
+The Worker's `name` in that file has to match the Worker your Cloudflare build deploys to. If
+they differ, wrangler warns, overrides the name, and offers to open a pull request against your
+repository to reconcile them.
 
 Create the tables, set the shared token, and deploy. `schema.sql` holds the catalogue and the
 experiment tables; it is safe to re-run, but it only creates - if you change a column later you

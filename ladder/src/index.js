@@ -251,6 +251,12 @@ export default {
       if (request.method === "GET" && url.pathname === "/api/catalog") {
         return json({ viewer: who, agents: await catalog(env, url) });
       }
+      // Build storage is the one part that needs R2. Everything else - queueing experiments,
+      // watching them, reading results - runs on D1 alone, so an account without R2 enabled
+      // gets a clear answer here rather than a 500 from an undefined binding.
+      if ((zip || url.pathname === "/api/upload") && !env.BUCKET) {
+        return json({ error: "Agent builds need R2 enabled on this account" }, 503);
+      }
       if (request.method === "GET" && zip) return await download(env, zip[1]);
       if (request.method === "POST" && url.pathname === "/api/upload") {
         return await upload(request, env, who);

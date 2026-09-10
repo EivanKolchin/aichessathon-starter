@@ -22,6 +22,7 @@ from chesslab.builds import build_spec, extract, verify
 from chesslab.registry import EngineSpec, write_json
 
 TIMEOUT_S = 60.0
+USER_AGENT = "chesslab-ladder/0.1 (+https://aichessathon.com)"
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,9 @@ class Endpoint:
         self, path: str, method: str = "GET", body: bytes | None = None, mime: str = ""
     ) -> Any:
         request = urllib.request.Request(f"{self.url.rstrip('/')}{path}", data=body, method=method)
+        # Cloudflare's edge answers 403 (error 1010) to the default Python-urllib signature, so
+        # the client says what it actually is. This never comes up against `wrangler dev`.
+        request.add_header("User-Agent", USER_AGENT)
         if self.token:
             request.add_header("Authorization", f"Bearer {self.token}")
         if mime:
