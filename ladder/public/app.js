@@ -21,14 +21,6 @@ const bytes = (value) => {
   return `${(value / 1000000).toFixed(1)} MB`;
 };
 
-function token() {
-  try {
-    return localStorage.getItem("ladder-token") || "";
-  } catch {
-    return "";
-  }
-}
-
 // The name this browser goes by when the ladder is open and asks for no sign-in. Shared with
 // the arena, so an upload from here and a run from there belong to the same person.
 function viewer() {
@@ -47,10 +39,8 @@ function viewer() {
 async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
   headers.set("X-Ladder-Owner", viewer());
-  if (token()) headers.set("Authorization", `Bearer ${token()}`);
   const response = await fetch(path, { ...options, headers });
   const result = await response.json().catch(() => ({ error: `Request failed (${response.status})` }));
-  if (response.status === 401) $("token-row").hidden = false;
   if (!response.ok) {
     const error = new Error(result.error || `Request failed (${response.status})`);
     error.problems = result.problems || [];
@@ -149,7 +139,6 @@ function send(form) {
     const request = new XMLHttpRequest();
     request.open("POST", "/api/upload");
     request.setRequestHeader("X-Ladder-Owner", viewer());
-    if (token()) request.setRequestHeader("Authorization", `Bearer ${token()}`);
     request.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
         $("bar").hidden = false;
@@ -164,7 +153,6 @@ function send(form) {
       } catch {
         body = { error: `Request failed (${request.status})` };
       }
-      if (request.status === 401) $("token-row").hidden = false;
       if (request.status >= 200 && request.status < 300) resolve(body);
       else {
         const error = new Error(body.error || `Request failed (${request.status})`);
@@ -246,7 +234,6 @@ async function refresh() {
     const result = await api(`/api/catalog?all=${$("show-withdrawn").checked ? "1" : "0"}`);
     agents = result.agents;
     $("viewer").textContent = result.viewer.email;
-    $("token-row").hidden = true;
     render();
   } catch (error) {
     status(error.message, "bad");
@@ -288,11 +275,6 @@ function init() {
 
   $("upload").addEventListener("click", upload);
   $("show-withdrawn").addEventListener("change", refresh);
-  $("save-token").addEventListener("click", () => {
-    localStorage.setItem("ladder-token", $("token").value.trim());
-    $("token").value = "";
-    refresh();
-  });
   $("agents").addEventListener("click", async (event) => {
     const button = event.target.closest("[data-withdraw]");
     if (!button) return;

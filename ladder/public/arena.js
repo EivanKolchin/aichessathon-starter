@@ -7,7 +7,7 @@ let catalog, catalogKey = "", run, game, runId = initialParams.get("run") || "",
 let frameIndex = 0, timer = null, polling = false, historyKey = "", gamesKey = "", moveKey = "";
 let selectionRevision = 0, lastRender = null;
 let play = null, guess = null, selected = "", targets = new Map();
-let signedIn = true, tokenAsked = false, pollBanner = false;
+let pollBanner = false;
 let playTimer = null, playRevision = 0, resultSeen = false, clockTimer = null, clockAnchor = null;
 const HUMAN = "you";
 const files = "abcdefgh";
@@ -45,7 +45,6 @@ function viewer() {
 }
 async function api(path, data) {
   const headers = new Headers({"X-Ladder-Owner": viewer()});
-  if (token()) headers.set("Authorization", `Bearer ${token()}`);
   const options = {headers};
   if (data !== undefined) {
     options.method = "POST";
@@ -59,7 +58,6 @@ async function api(path, data) {
     throw ladderFailure(new Error(`Could not reach the ladder: ${cause.message}`));
   }
   const result = await response.json().catch(() => ({}));
-  if (response.status === 401) askForToken();
   if (!response.ok) {
     const failure = new Error(result.error || `Request failed (${response.status})`);
     failure.status = response.status;
@@ -69,18 +67,7 @@ async function api(path, data) {
 }
 // A message belongs where the thing that failed is: inside the dialog you are looking at, and
 // in the banner otherwise.
-const DIALOG_ERRORS = {"setup-dialog": "setup-error", "play-dialog": "play-error",
-  "token-dialog": "token-error"};
-// The token is the one thing you cannot get on with anything else without, so being asked
-// for it is a dialog rather than a bar: it reaches you with the setup form already open.
-function askForToken() {
-  signedIn = false;
-  $("token-state").textContent = token() ? "That token was refused" : "Not signed in";
-  if (tokenAsked || $("token-dialog").open) return;
-  tokenAsked = true;
-  $("token-dialog").showModal();
-  $("token").focus();
-}
+const DIALOG_ERRORS = {"setup-dialog": "setup-error", "play-dialog": "play-error"};
 function showError(error) {
   const message = error.message || String(error);
   $("error").textContent = message; $("error").hidden = false;
@@ -367,14 +354,11 @@ async function poll() {
   try {
     const state = await api("/api/runs");
     if (revision !== selectionRevision) return;
-    signedIn = true;
-    tokenAsked = false;
     // A banner that outlives what caused it is worse than no banner: it goes on saying the app
     // is broken long after it recovered, and nothing else here ever takes it down. Whatever the
     // poll reported, the poll working again is the answer to it. A run's own error is re-shown
     // by renderRun below, so a real one stays put.
     if (pollBanner) { $("error").hidden = true; pollBanner = false; }
-    if ($("token-dialog").open) $("token-dialog").close();
     const runners = state.runners || [];
     const offered = runners.map((r) => r.catalog).find(Boolean) || null;
     const key = offered ? JSON.stringify(offered) : "";
@@ -428,14 +412,11 @@ async function poll() {
     frameIndex = following ? game.frames.length-1 : Math.min(frameIndex, game.frames.length-1);
     renderRun(); renderGame();
   } catch (error) {
-    // A 401 is not a broken ladder, it is one that has not been told who is asking, and the
-    // sign-in dialog already says so; a banner underneath it would only repeat that.
     if (error.fromLadder) {
       $("connection").classList.add("offline");
-      $("connection").textContent = error.status === 401
-        ? "Waiting for the ladder token" : "Cannot reach the ladder";
+      $("connection").textContent = "Cannot reach the ladder";
     }
-    if (error.status !== 401) { pollBanner = true; showError(error); }
+    pollBanner = true; showError(error);
   } finally { polling = false; }
 }
 async function chooseGame(id) { selectionRevision++; pauseReplay(); following = false; gameId = id; frameIndex = 0; moveKey = ""; await poll(); }
@@ -916,10 +897,8 @@ function bindDrop() {
       form.append("family", $("drop-family").value.trim());
       form.append("notes", $("drop-notes").value.trim());
       const headers = new Headers({"X-Ladder-Owner": viewer()});
-      if (token()) headers.set("Authorization", `Bearer ${token()}`);
       const response = await fetch("/api/upload", {method:"POST", headers, body:form});
       const result = await response.json().catch(() => ({}));
-      if (response.status === 401) askForToken();
       if (!response.ok) {
         const problems = (result.problems || []).join("; ");
         throw new Error((result.error || `Upload failed (${response.status})`) + (problems ? ` — ${problems}` : ""));
@@ -1389,19 +1368,7 @@ function bindArena() {
   bindGameWindow();
   renderOpponents();
   $("experiment-list").addEventListener("click", (event) => { const button = event.target.closest("button[data-run]"); if (button) { $("history").value = button.dataset.run; $("history").dispatchEvent(new Event("change")); } });
-  $("connection").addEventListener("click", () => {
-    tokenAsked = true;
-    if (!$("token-dialog").open) $("token-dialog").showModal();
-  });
-  $("token-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    localStorage.setItem("ladder-token", $("token").value.trim());
-    $("token").value = "";
-    clearError();
-    tokenAsked = false;
-    await refreshAgents().catch(() => {});
-    await poll();
-  });
+
   $("candidate").addEventListener("change", renderOpponents);
   $("opponents").addEventListener("change", updateSetup);
   for (const id of ["split","opening-count","parallel"]) $(id).addEventListener("change", updateSetup);

@@ -40,44 +40,13 @@ function json(body, status = 200) {
   });
 }
 
-async function digest(value) {
-  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
-}
 
-function hex(bytes) {
-  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
 
-async function sameSecret(offered, expected) {
-  if (!expected) return false;
-  const [a, b] = await Promise.all([digest(offered), digest(expected)]);
-  return crypto.subtle.timingSafeEqual(a, b);
-}
-
-// Two ways in. A browser arrives with an Access identity, which is only believed once
-// ACCESS_ENABLED says Access actually fronts this hostname. Everything else, including
-// `python -m chesslab ladder`, presents the bearer token.
+// Open authentication: accepts everyone without requiring a token or password.
 async function identify(request, env) {
   const email = request.headers.get("Cf-Access-Authenticated-User-Email");
-  if (env.ACCESS_ENABLED === "true" && email) {
-    const allowed = (env.ALLOWED_EMAILS || "")
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean);
-    if (allowed.length && !allowed.includes(email.toLowerCase())) return null;
-    return { email, via: "access" };
-  }
-  const header = request.headers.get("Authorization") || "";
-  const offered = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (offered && (await sameSecret(offered, env.LADDER_TOKEN))) {
-    return { email: owned(request) || "token", via: "token" };
-  }
-  // PUBLIC opens every route to anyone with the address. The name a caller gives is then just
-  // a name and proves nothing - it keeps two browsers from sharing one game, and it is not a
-  // credential. Anyone can claim to be anyone, which is what having no sign-in means.
-  if (env.PUBLIC === "true") return { email: owned(request) || "anyone", via: "public" };
-  return null;
+  if (email) return { email, via: "access" };
+  return { email: owned(request) || "anyone", via: "public" };
 }
 
 // A caller-supplied name reaches D1 and the page, so it is held to something harmless.
@@ -252,10 +221,6 @@ export default {
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(request);
 
     const who = await identify(request, env);
-    if (!who) {
-      const error = "Sign in through Cloudflare Access, or send the ladder token as a bearer header";
-      return json({ error }, 401);
-    }
 
     // Same-origin guard for the state-changing routes; token clients set no Origin at all.
     if (request.method === "POST") {
