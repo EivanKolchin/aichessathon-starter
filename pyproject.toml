@@ -34,6 +34,6 @@ ignore = ["N818"]
 
 [tool.mypy]
 strict = true
-files = ["agent.py", "a0", "harness", "chesslab"]
+files = ["agent.py", "a0", "a1", "harness", "chesslab"]
 # The unchanged event harness uses Linux-only process suspension APIs.
 platform = "linux"

@@ -6,10 +6,15 @@ the site is applied exactly once, and that a board is torn down when the session
 gone. The engine and the referee are covered by the lab's own tests.
 """
 
+import http.client
+import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 from typing import Any
 
+from chesslab import ladder
+from chesslab.ladder import Endpoint
 from chesslab.runner import Runner
 
 
@@ -17,9 +22,10 @@ class FakeSource:
     """Answers the runner the way the Worker would, and remembers what it was asked."""
 
     url = "https://ladder.example"
+    token = ""
 
     def __init__(self) -> None:
-        self.answers: dict[str, list[Any]] = {}
+        self.answers: dict[str, list[Any]] = {"/api/catalog": [{"agents": []}]}
         self.calls: list[tuple[str, Any]] = []
 
     def reply(self, path: str, *answers: Any) -> None:
@@ -77,8 +83,27 @@ class FakeLab:
         return self.state_now
 
 
+# Whatever a test pulls lands here, never in the repository.
+SCRATCH: tempfile.TemporaryDirectory[str] | None = None
+
+
+def setUpModule() -> None:
+    global SCRATCH
+    SCRATCH = tempfile.TemporaryDirectory(prefix="chesslab-runner-tests-")
+
+
+def tearDownModule() -> None:
+    assert SCRATCH is not None
+    SCRATCH.cleanup()
+
+
+def scratch() -> Path:
+    assert SCRATCH is not None
+    return Path(SCRATCH.name)
+
+
 def make_runner(source: FakeSource, lab: FakeLab) -> Runner:
-    return Runner(source, lab, "devbox", Path("uploads"))  # type: ignore[arg-type]
+    return Runner(source, lab, "devbox", scratch() / "uploads")  # type: ignore[arg-type]
 
 
 class SparringTests(unittest.TestCase):
@@ -168,6 +193,68 @@ class SparringTests(unittest.TestCase):
         self.runner.attend()
         posted = self.source.posted("/api/play/20260101000000-abcdef/state")
         self.assertIn(b'"status": "over"', posted[-1])
+
+
+class CatalogueTests(unittest.TestCase):
+    def test_a_catalogue_that_answers_with_nonsense_is_a_message_not_a_crash(self) -> None:
+        source = FakeSource()
+        source.answers["/api/catalog"] = [{"unexpected": True}]
+        with self.assertRaises(ValueError) as caught:
+            ladder.pull(
+                source,  # type: ignore[arg-type]
+                scratch() / "uploads",
+                scratch() / "engines.json",
+                scratch() / "ladder.json",
+            )
+        self.assertIn("did not answer with a catalogue", str(caught.exception))
+
+    def test_an_idle_machine_goes_and_gets_what_was_uploaded_since(self) -> None:
+        source, lab = FakeSource(), FakeLab()
+        runner = make_runner(source, lab)
+        pulls: list[Any] = []
+        with unittest.mock.patch("chesslab.runner.ladder.pull", lambda *a: pulls.append(a)):
+            runner.serve(once=True)
+            self.assertEqual(len(pulls), 1)
+            runner.serve(once=True)          # too soon; the catalogue has not moved on
+            self.assertEqual(len(pulls), 1)
+            runner.pulled = 0.0
+            runner.serve(once=True)
+        self.assertEqual(len(pulls), 2)
+
+    def test_an_unreachable_catalogue_does_not_stop_the_runner(self) -> None:
+        source, lab = FakeSource(), FakeLab()
+        runner = make_runner(source, lab)
+
+        def refuse(*args: Any) -> None:
+            raise ValueError("Could not reach https://ladder.example")
+
+        with unittest.mock.patch("chesslab.runner.ladder.pull", refuse):
+            runner.serve(once=True)
+        self.assertIsNone(runner.session)
+
+
+class WeatherTests(unittest.TestCase):
+    """A runner is left up for hours; the network under it is not that reliable."""
+
+    def test_a_dropped_connection_is_a_failed_request_not_a_crash(self) -> None:
+        dropped = http.client.RemoteDisconnected("Remote end closed connection without response")
+        with (
+            unittest.mock.patch("urllib.request.urlopen", side_effect=dropped),
+            self.assertRaises(ValueError) as caught,
+        ):
+            Endpoint("https://ladder.example", "t").json("/api/runs")
+        self.assertIn("Could not reach", str(caught.exception))
+
+    def test_a_ladder_that_blinks_is_a_wait_not_the_end_of_the_run(self) -> None:
+        source, lab = FakeSource(), FakeLab()
+        runner = make_runner(source, lab)
+
+        def refuse(*args: Any, **kwargs: Any) -> Any:
+            raise ValueError("Could not reach https://ladder.example: [Errno 104] reset")
+
+        source.json = refuse  # type: ignore[method-assign]
+        runner.serve(once=True)          # would have taken the process down with it
+        self.assertIsNone(runner.session)
 
 
 if __name__ == "__main__":

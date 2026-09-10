@@ -41,8 +41,9 @@ database_id = "ebe6ff30-ef35-4aba-9a76-253e17b384d5"
 # Agent build storage. R2 has to be enabled on the account before this bucket can exist:
 #   Cloudflare dashboard -> R2 -> Overview, then
 #   npx wrangler r2 bucket create chess-ladder-agents
-# Uncomment to turn agent uploads on. Without it the Worker still deploys and the experiments
-# arena works; only /api/upload and the build downloads answer 503.
-# [[r2_buckets]]
-# binding = "BUCKET"
-# bucket_name = "chess-ladder-agents"
+# Comment this back out and the Worker still deploys and the experiments arena still works;
+# only /api/upload and the build downloads answer 503. The binding has to be named BUCKET —
+# that is what src/index.js reads, not the name wrangler suggests when it creates the bucket.
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "chess-ladder-agents"

@@ -55,6 +55,11 @@ class Endpoint:
             raise ValueError(f"{self.url} said {error.code}: {message}") from error
         except urllib.error.URLError as error:
             raise ValueError(f"Could not reach {self.url}: {error.reason}") from error
+        except OSError as error:
+            # A keep-alive connection dropped by the edge arrives here rather than as a
+            # URLError, and a runner left up for hours will meet one. Same kind of failure as
+            # the two above: the request did not happen, so say so and let the caller retry.
+            raise ValueError(f"Could not reach {self.url}: {error}") from error
 
     def json(
         self, path: str, method: str = "GET", body: bytes | None = None, mime: str = ""
@@ -102,7 +107,12 @@ def merge_registry(registry: Path, managed: dict[str, EngineSpec], previous: set
 def pull(source: Endpoint, uploads: Path, registry: Path, state: Path) -> dict[str, list[str]]:
     """Bring the local registry in line with the catalogue. Returns what changed."""
     catalogue = source.json("/api/catalog")
-    agents = {str(agent["id"]): agent for agent in catalogue["agents"]}
+    listed = catalogue.get("agents") if isinstance(catalogue, dict) else None
+    if not isinstance(listed, list):
+        # A runner pulls this on a loop, so a catalogue that answers with something unexpected
+        # has to be a message the caller can retry past, not a KeyError out of the loop.
+        raise ValueError(f"{source.url} did not answer with a catalogue")
+    agents = {str(agent["id"]): agent for agent in listed}
     saved: dict[str, Any] = {}
     if state.exists():
         saved = json.loads(state.read_text(encoding="utf-8"))

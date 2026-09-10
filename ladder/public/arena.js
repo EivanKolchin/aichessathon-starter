@@ -7,6 +7,7 @@ let catalog, catalogKey = "", run, game, runId = initialParams.get("run") || "",
 let frameIndex = 0, timer = null, polling = false, historyKey = "", gamesKey = "", moveKey = "";
 let selectionRevision = 0, lastRender = null;
 let play = null, guess = null, selected = "", targets = new Map();
+let signedIn = false, tokenAsked = false;
 let playTimer = null, playRevision = 0, resultSeen = false, clockTimer = null, clockAnchor = null;
 const HUMAN = "you";
 const files = "abcdefgh";
@@ -38,7 +39,7 @@ async function api(path, data) {
   }
   const response = await fetch(path, options);
   const result = await response.json().catch(() => ({}));
-  if (response.status === 401) $("token-row").hidden = false;
+  if (response.status === 401) askForToken();
   if (!response.ok) {
     const failure = new Error(result.error || `Request failed (${response.status})`);
     failure.status = response.status;
@@ -48,7 +49,18 @@ async function api(path, data) {
 }
 // A message belongs where the thing that failed is: inside the dialog you are looking at, and
 // in the banner otherwise.
-const DIALOG_ERRORS = {"setup-dialog": "setup-error", "play-dialog": "play-error"};
+const DIALOG_ERRORS = {"setup-dialog": "setup-error", "play-dialog": "play-error",
+  "token-dialog": "token-error"};
+// The token is the one thing you cannot get on with anything else without, so being asked
+// for it is a dialog rather than a bar: it reaches you with the setup form already open.
+function askForToken() {
+  signedIn = false;
+  $("token-state").textContent = token() ? "That token was refused" : "Not signed in";
+  if (tokenAsked || $("token-dialog").open) return;
+  tokenAsked = true;
+  $("token-dialog").showModal();
+  $("token").focus();
+}
 function showError(error) {
   const message = error.message || String(error);
   $("error").textContent = message; $("error").hidden = false;
@@ -88,11 +100,15 @@ function updateSetup() {
   $("start").disabled = !catalog || playing();
   updateCompleteTest();
 }
+// Nothing here knows what can be played until a machine says so, and there are two reasons
+// it might not have: nobody is signed in, or nobody is running one.
+const waitingFor = () => signedIn ? "No runner is online" : "Sign in to the ladder";
 function renderOpponents() {
-  // No runner online means nothing here knows what can be played, so the form says so rather
-  // than offering a pool that no machine could actually start.
   if (!catalog) {
-    $("opponents").innerHTML = '<p class="sidebar-empty">No runner is online. Start one with <code>python -m chesslab runner</code> and the engines it can play appear here.</p>';
+    $("opponents").innerHTML = signedIn
+      ? '<p class="sidebar-empty">No runner is online. Start one with <code>python -m chesslab runner</code> and the engines it can play appear here.</p>'
+      : '<p class="sidebar-empty">Sign in to the ladder and the engines a runner can play appear here.</p>';
+    $("candidate").innerHTML = `<option value="">${waitingFor()}</option>`;
     updateSetup();
     return;
   }
@@ -207,7 +223,10 @@ function renderBoard() {
   const frame = currentFrame(), fen = frame.fen;
   const boardKey = `${fen}:${frame.uci}:${flipped}`;
   if ($("board").dataset.key !== boardKey) {
-    const sameGame = lastRender && lastRender.gameId === game?.id && lastRender.flipped === flipped;
+    // With no game there is nothing to animate between, and two null renders in a row
+    // used to compare undefined against undefined and then reach for its frames.
+    const sameGame = game && lastRender && lastRender.gameId === game.id
+      && lastRender.flipped === flipped;
     const plan = sameGame
       ? movePlan(game.frames, lastRender.index, frameIndex, lastRender.fen, flipped) : null;
     $("board").innerHTML = boardHtml(fen, frame.uci, flipped);
@@ -325,7 +344,9 @@ async function poll() {
   try {
     const state = await api("/api/runs");
     if (revision !== selectionRevision) return;
-    $("token-row").hidden = true;
+    signedIn = true;
+    tokenAsked = false;
+    if ($("token-dialog").open) $("token-dialog").close();
     const runners = state.runners || [];
     const offered = runners.map((r) => r.catalog).find(Boolean) || null;
     const key = offered ? JSON.stringify(offered) : "";
@@ -333,8 +354,10 @@ async function poll() {
       catalogKey = key;
       catalog = offered;
       const candidate = $("candidate").value;
-      $("candidate").innerHTML = (catalog?.engines || []).filter((e) => e.available)
-        .map((e) => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join("");
+      $("candidate").innerHTML = catalog
+        ? catalog.engines.filter((e) => e.available)
+            .map((e) => `<option value="${esc(e.id)}">${esc(e.name)}</option>`).join("")
+        : `<option value="">${waitingFor()}</option>`;
       if (catalog?.engines.some((e) => e.id === candidate && e.available)) $("candidate").value = candidate;
       renderOpponents();
     }
@@ -859,7 +882,7 @@ function bindDrop() {
       if (token()) headers.set("Authorization", `Bearer ${token()}`);
       const response = await fetch("/api/upload", {method:"POST", headers, body:form});
       const result = await response.json().catch(() => ({}));
-      if (response.status === 401) $("token-row").hidden = false;
+      if (response.status === 401) askForToken();
       if (!response.ok) {
         const problems = (result.problems || []).join("; ");
         throw new Error((result.error || `Upload failed (${response.status})`) + (problems ? ` — ${problems}` : ""));
@@ -1159,7 +1182,7 @@ function renderPlayOptions() {
   const engines = (catalog?.engines || []).filter((e) => e.available);
   $("play-engine").innerHTML = engines.length
     ? engines.map((e) => `<option value="${esc(e.id)}">${esc(e.name)} · ${esc(e.family)}</option>`).join("")
-    : "<option value=\"\">No runner is online</option>";
+    : `<option value="">${waitingFor()}</option>`;
   $("play-start").disabled = !engines.length;
   const splits = new Map();
   for (const opening of catalog?.openings || []) {
@@ -1256,13 +1279,19 @@ function bindArena() {
   bindRegistry();
   bindSweep();
   bindGameWindow();
-  updateSetup();
+  renderOpponents();
   $("experiment-list").addEventListener("click", (event) => { const button = event.target.closest("button[data-run]"); if (button) { $("history").value = button.dataset.run; $("history").dispatchEvent(new Event("change")); } });
-  $("save-token").addEventListener("click", async () => {
+  $("connection").addEventListener("click", () => {
+    tokenAsked = true;
+    if (!$("token-dialog").open) $("token-dialog").showModal();
+  });
+  $("token-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
     localStorage.setItem("ladder-token", $("token").value.trim());
     $("token").value = "";
-    $("token-row").hidden = true;
     clearError();
+    tokenAsked = false;
+    await refreshAgents().catch(() => {});
     await poll();
   });
   $("candidate").addEventListener("change", renderOpponents);

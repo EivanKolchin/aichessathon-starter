@@ -1,0 +1,8 @@
+{
+  "id": "a1-010",
+  "name": "A1 0.1.0 compiled experiment",
+  "family": "Original A1 alpha-beta",
+  "path": ".chesslab/checkpoints/a1-0.1.0",
+  "requires": ["numpy", "numba"],
+  "description": "Original compiled board/search, A0 evaluation formulas; experimental checkpoint"
+}

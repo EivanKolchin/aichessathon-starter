@@ -171,7 +171,10 @@ function renderBoard() {
   const frame = currentFrame(), fen = frame.fen;
   const boardKey = `${fen}:${frame.uci}:${flipped}`;
   if ($("board").dataset.key !== boardKey) {
-    const sameGame = lastRender && lastRender.gameId === game?.id && lastRender.flipped === flipped;
+    // With no game there is nothing to animate between, and two null renders in a row
+    // used to compare undefined against undefined and then reach for its frames.
+    const sameGame = game && lastRender && lastRender.gameId === game.id
+      && lastRender.flipped === flipped;
     const plan = sameGame
       ? movePlan(game.frames, lastRender.index, frameIndex, lastRender.fen, flipped) : null;
     $("board").innerHTML = boardHtml(fen, frame.uci, flipped);

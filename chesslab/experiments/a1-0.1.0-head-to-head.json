@@ -1,0 +1,10 @@
+{
+  "label": "A1 0.1.0 compiled experiment vs A0 0.1.2",
+  "candidate": "a1-010",
+  "opponents": ["a0-012"],
+  "openings": ["italian", "scotch", "najdorf", "dragon", "french", "winawer", "qgd", "slav", "english", "reti"],
+  "base_ms": 5000,
+  "increment_ms": 50,
+  "ply_cap": 600,
+  "seed": 20260910
+}

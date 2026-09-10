@@ -27,6 +27,10 @@ STATUS_EVERY_S = 2.0
 # The browser counts a running clock down on its own between polls; this is how often it is
 # told what the board's clock actually says, so the two cannot drift far apart.
 CLOCK_REFRESH_S = 1.5
+# How often an idle machine goes and gets what has been uploaded since. Without this the
+# catalogue was only pulled when a job was claimed, so a freshly uploaded agent could not
+# be chosen as an opponent until somebody had already run an experiment without it.
+PULL_EVERY_S = 30.0
 FRAME_BATCH = 200
 
 
@@ -46,6 +50,7 @@ class Runner:
         # A finished game still holds the board — take backs and rematches need it — but it
         # no longer holds the machine, so a queued experiment can have it.
         self.occupied = False
+        self.pulled = 0.0
 
     # ── the loop ───────────────────────────────────────────────────────────────────────────
 
@@ -56,7 +61,8 @@ class Runner:
             # Whoever is already sitting at the board keeps it, and experiments wait.
             self.attend()
             if not self.occupied:
-                job = self.claim()
+                self.refresh()
+                job = self.look()
                 if job is not None:
                     if self.session is not None:
                         self.send(f"/api/play/{self.session}/state", {"status": "ended"})
@@ -65,6 +71,26 @@ class Runner:
             if once:
                 return
             time.sleep(PLAY_POLL_S if self.session else POLL_S)
+
+    def refresh(self) -> None:
+        """Keep this machine's list of opponents level with what the catalogue holds."""
+        if time.monotonic() - self.pulled < PULL_EVERY_S:
+            return
+        self.pulled = time.monotonic()
+        try:
+            ladder.pull(
+                self.source, self.uploads, self.lab.registry_path, self.uploads / "ladder.json"
+            )
+        except (ValueError, OSError) as error:
+            print(f"could not pull the catalogue: {error}", flush=True)
+
+    def look(self) -> dict[str, Any] | None:
+        """One attempt to take work. A ladder that blinks is a wait, not the end of the run."""
+        try:
+            return self.claim()
+        except ValueError as error:
+            print(f"could not ask for work: {error}", flush=True)
+            return None
 
     def claim(self) -> dict[str, Any] | None:
         """Also the heartbeat, and how the site learns what this machine can play."""

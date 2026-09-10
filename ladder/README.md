@@ -34,10 +34,13 @@ python -m chesslab runner --url https://your-worker.example.com
 ```
 
 It dials out only: no inbound port, no certificate on localhost, no CORS. It claims one job at a
-time, pulls any build it does not already have, and reports positions, results and the manifest.
-The claim doubles as a heartbeat and carries the engines and positions that machine can play, so
-the site only ever offers opponents a runner actually has. With no runner online, queued
-experiments simply wait.
+time and reports positions, results and the manifest. The claim doubles as a heartbeat and
+carries the engines and positions that machine can play, so the site only ever offers opponents
+a runner actually has. With no runner online, queued experiments simply wait.
+
+While it is idle it also pulls the catalogue every half minute, so an agent somebody uploads
+becomes selectable as an opponent without anyone having to run an experiment first. It pulls
+again before claiming a job, which is what guarantees the build is there when the game starts.
 
 ## Playing the engine from the site
 
