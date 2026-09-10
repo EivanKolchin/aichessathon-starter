@@ -1,0 +1,34 @@
+{
+  "label": "A1 0.2.0 vs frozen A0 0.1.2 \u00b7 all development openings \u00b7 2 at once",
+  "candidate": "a1-020",
+  "opponents": [
+    "a0-012"
+  ],
+  "openings": [
+    "italian",
+    "scotch",
+    "petroff",
+    "ruy",
+    "najdorf",
+    "dragon",
+    "alapin",
+    "closed",
+    "french",
+    "winawer",
+    "tarrasch",
+    "french-ex",
+    "qgd",
+    "qga",
+    "slav",
+    "semi-slav",
+    "english",
+    "reti",
+    "bird",
+    "larsen"
+  ],
+  "base_ms": 10000,
+  "increment_ms": 100,
+  "ply_cap": 600,
+  "seed": 20260911,
+  "parallel": 2
+}

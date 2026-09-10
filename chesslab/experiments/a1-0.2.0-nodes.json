@@ -1,0 +1,19 @@
+{
+  "label": "A1 0.2.0 against the Stockfish node dial \u00b7 2 at once",
+  "candidate": "a1-020",
+  "opponents": [
+    "sf-nodes-1000",
+    "sf-nodes-4000",
+    "sf-nodes-16000"
+  ],
+  "openings": [
+    "italian",
+    "french",
+    "qgd"
+  ],
+  "base_ms": 120000,
+  "increment_ms": 500,
+  "ply_cap": 600,
+  "seed": 20260911,
+  "parallel": 2
+}

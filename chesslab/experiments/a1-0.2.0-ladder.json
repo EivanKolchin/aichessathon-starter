@@ -1,5 +1,5 @@
 {
-  "label": "A1 0.2.0 against the Stockfish Elo dial",
+  "label": "A1 0.2.0 against the Stockfish Elo dial \u00b7 4 at once",
   "candidate": "a1-020",
   "opponents": [
     "sf-elo-1320",
@@ -17,5 +17,6 @@
   "base_ms": 120000,
   "increment_ms": 500,
   "ply_cap": 600,
-  "seed": 20260910
+  "seed": 20260910,
+  "parallel": 4
 }
