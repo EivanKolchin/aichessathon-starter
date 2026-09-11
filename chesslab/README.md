@@ -187,6 +187,19 @@ does that; the lab checks the files exist before saving, so a mistyped path is r
 than becoming a dead entry. Either way, entries are written to `.chesslab/engines.json`, the same
 file the command line writes.
 
+A submission zip registers from the command line too, which is the artefact you already have
+after `make zip`. It goes through the drop page's checks, not a friendlier set: the archive is
+validated the way the platform validates it, unpacked under `.chesslab/agents/`, started through
+the runner and asked for one move. A zip that would not have played is refused here instead of
+being discovered mid-experiment, and nothing is left behind when it is.
+
+```powershell
+.venv\Scripts\python.exe -m chesslab register submission.zip --name "A1 0.2.2 submission"
+```
+
+`--name` also sets the registry `id`; without it the filename names the agent, the way the drop
+dialog suggests one. `--family` and `--notes` are optional.
+
 UCI options, extra build assets and per-move caps still need a JSON spec:
 
 ```powershell

@@ -1,0 +1,8 @@
+{
+  "id": "a1-hybrid-pilot",
+  "name": "A1 neural pilot · experimental",
+  "family": "Original A1 alpha-beta + residual NN",
+  "path": ".chesslab/checkpoints/a1-hybrid-pilot-022",
+  "requires": ["numpy", "numba"],
+  "description": "Original 768-32-1 network trained from scratch; test-family loss regressed, not promoted"
+}

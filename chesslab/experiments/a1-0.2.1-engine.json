@@ -1,0 +1,8 @@
+{
+  "id": "a1-021",
+  "name": "A1 0.2.1 classical control (old startup)",
+  "family": "Original A1 alpha-beta",
+  "path": ".chesslab/checkpoints/a1-0.2.1",
+  "requires": ["numpy", "numba"],
+  "description": "Full TT identity checks and isolated null history; classical evaluator"
+}

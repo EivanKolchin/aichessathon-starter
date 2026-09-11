@@ -1,0 +1,11 @@
+{
+  "label": "Neural pilot · diversity screen, not a promotion test",
+  "candidate": "a1-hybrid-pilot",
+  "opponents": ["a1-022", "solid", "active", "rollout", "stockfish"],
+  "openings": ["italian", "french", "qgd", "english"],
+  "base_ms": 10000,
+  "increment_ms": 100,
+  "ply_cap": 600,
+  "seed": 20260911,
+  "parallel": 1
+}

@@ -9,6 +9,7 @@ import ast
 import io
 import shutil
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
 
 from chesslab.registry import ROOT, EngineSpec
@@ -148,3 +149,27 @@ def build_spec(
         requires=imports(directory),
         includes=includes,
     )
+
+
+def install(
+    payload: bytes,
+    directory: Path,
+    engine_id: str,
+    name: str,
+    family: str,
+    description: str,
+    probe: Callable[[EngineSpec], str],
+) -> tuple[EngineSpec, str]:
+    """Validate a zip the way the platform would, unpack it, describe it, and prove it plays.
+
+    The browser drop and `chesslab register` share this so neither gets a friendlier set of
+    checks than the other. Nothing survives on disk unless every step passed, so a refused
+    build is a message at the point of registration rather than a lost game later.
+    """
+    try:
+        extract(payload, directory)
+        spec = build_spec(directory, engine_id, name, family, description)
+        return spec, probe(spec)
+    except BaseException:
+        shutil.rmtree(directory, ignore_errors=True)
+        raise

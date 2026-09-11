@@ -32,6 +32,11 @@ are played here.
 Open http://127.0.0.1:8765. See the lab guide for minimal setup, adding UCI engines and Python
 checkpoints, headless runs and matched comparisons. Research tools do not enter the submission.
 
+The original compiled A1 engine and its small-network experiment are described in
+[the hybrid research report](docs/research/hybrid-pilot.md). It includes training commands,
+opening-family splits, runtime measurements and the current decision to keep the first network
+experimental. [Frozen A1 0.1.0 results](docs/research/a1-0.1.0-results.md) cover the earlier 44-game run.
+
 ## Writing an agent
 
 `agent.py` is the submission entry point. It now runs the original [A0 engine](a0/README.md),

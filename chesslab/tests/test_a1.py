@@ -33,11 +33,20 @@ from a1.board import (
 )
 from a1.evaluation import evaluate
 from a1.search import (
+    BOUND,
+    CONTROL_SIZE,
+    DEPTH,
+    EXACT,
+    IDENTITY,
+    KEY,
     NODE_LIMIT,
+    NULL_ACTIVE,
     ROOT_MOVE,
+    SCORE,
     STOP,
     Search,
     SearchConfig,
+    hint_key,
     negamax,
     repeated,
     warmup,
@@ -240,7 +249,7 @@ class CompiledSearchTests(unittest.TestCase):
             self.assertEqual(len(answers), 1, (fen, answers))
 
     def test_a_repetition_is_still_a_draw_when_bounds_are_reused(self) -> None:
-        """The pre-probe repetition test is what makes relaxed bound reuse safe; check it."""
+        """Check this root history; subtree graph-history interaction remains approximate."""
         reference = chess.Board("7k/7r/8/8/8/8/R7/K7 w - - 10 1")
         for move in ("a2b2", "h7g7", "b2a2", "g7h7"):
             reference.push_uci(move)
@@ -343,7 +352,7 @@ class CompiledSearchTests(unittest.TestCase):
         board, state, positions, index = search.prepare(reference)
         self.assertFalse(repeated(positions, index, int(state[HALF])))
         before_board, before_state = board.copy(), state.copy()
-        control = np.zeros(6, dtype=np.int64)
+        control = np.zeros(CONTROL_SIZE, dtype=np.int64)
         control[NODE_LIMIT], control[ROOT_MOVE] = 80, encode(chess.Move.from_uci("e2e4"))
         negamax(
             board,
@@ -377,6 +386,126 @@ class CompiledSearchTests(unittest.TestCase):
         reference_without_history = chess.Board(reference.fen())
         _, state, positions, index = search.prepare(reference_without_history)
         self.assertFalse(repeated(positions, index, int(state[HALF])))
+
+    def test_score_cache_requires_the_complete_position(self) -> None:
+        reference = chess.Board()
+        search = Search(SearchConfig(quiescence=False, use_null=False, use_lmr=False))
+        board, state, positions, _ = search.prepare(reference)
+        positions[1] = positions[0]
+        key = hint_key(positions[1])
+        slot = key & (len(search.hints) - 1)
+
+        def probe(synthetic: int = 0) -> int:
+            control = np.zeros(CONTROL_SIZE, dtype=np.int64)
+            control[NULL_ACTIVE] = synthetic
+            return negamax(
+                board,
+                state,
+                1,
+                -32000,
+                32000,
+                1,
+                0,
+                0,
+                search.moves,
+                search.scores,
+                search.undos,
+                positions,
+                search.killers,
+                search.history,
+                search.hints,
+                control,
+                np.array([time.perf_counter() + 10]),
+                search.flags,
+            )
+
+        search.hints[slot, KEY] = key
+        search.hints[slot, SCORE] = 22222
+        search.hints[slot, DEPTH] = 9
+        search.hints[slot, BOUND] = EXACT
+        search.hints[slot, IDENTITY:] = positions[1]
+        self.assertEqual(probe(), 22222)
+        # Even an otherwise valid cached score must not cross into a virtual pass subtree.
+        self.assertNotEqual(probe(1), 22222)
+        # Same hash, depth and clock; a different exact board must reject this cached score.
+        search.hints[slot, IDENTITY] ^= 1
+        self.assertNotEqual(probe(), 22222)
+
+    def test_abort_inside_null_search_restores_state_and_context(self) -> None:
+        search = Search()
+        board, state, positions, _ = search.prepare(chess.Board())
+        positions[1] = positions[0]
+        before_board, before_state = board.copy(), state.copy()
+        control = np.zeros(CONTROL_SIZE, dtype=np.int64)
+        control[NODE_LIMIT] = 2
+        # The first child is the synthetic pass. Stop there, before it can return a bound.
+        negamax(
+            board,
+            state,
+            7,
+            0,
+            1,
+            1,
+            0,
+            0,
+            search.moves,
+            search.scores,
+            search.undos,
+            positions,
+            search.killers,
+            search.history,
+            search.hints,
+            control,
+            np.array([time.perf_counter() + 10]),
+            search.flags,
+        )
+        self.assertTrue(control[STOP])
+        self.assertEqual(control[NULL_ACTIVE], 0)
+        self.assertEqual(control[6], 0)
+        np.testing.assert_array_equal(board, before_board)
+        np.testing.assert_array_equal(state, before_state)
+
+    def test_synthetic_pass_does_not_claim_real_history_draws(self) -> None:
+        reference = chess.Board("7k/8/8/8/3R4/8/8/K7 w - - 0 1")
+        for move in ("a1a2", "h8h7", "a2a1", "h7h8", "a1a2", "h8h7", "a2b2", "h7h8", "b2a1"):
+            reference.push_uci(move)
+        self.assertFalse(reference.is_repetition(3))
+        # A king triangle takes three moves while the other king takes two. The pass
+        # restores side-to-move and fabricates a third occurrence of the starting position.
+        search = Search(SearchConfig(quiescence=False, use_null=False))
+        board, state, positions, index = search.prepare(reference)
+        before = state.copy()
+        make_null(state, search.undos[0])
+        identity(board, state, positions[index + 1])
+        self.assertTrue(repeated(positions, index + 1, int(state[HALF])))
+        for halfmove in (int(state[HALF]), 100):
+            state[HALF] = halfmove
+            for synthetic in (0, 1):
+                control = np.zeros(CONTROL_SIZE, dtype=np.int64)
+                control[NULL_ACTIVE] = synthetic
+                score = negamax(
+                    board,
+                    state,
+                    0,
+                    -32000,
+                    32000,
+                    1,
+                    0,
+                    index,
+                    search.moves,
+                    search.scores,
+                    search.undos,
+                    positions,
+                    search.killers,
+                    search.history,
+                    search.hints,
+                    control,
+                    np.array([time.perf_counter() + 10]),
+                    search.flags,
+                )
+                self.assertEqual(score, evaluate(board, state) if synthetic else 0)
+        unmake_null(state, search.undos[0])
+        self.assertTrue(np.array_equal(state, before))
 
     def test_short_and_expired_deadlines_leave_input_unchanged(self) -> None:
         reference = chess.Board()

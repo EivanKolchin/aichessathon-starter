@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "source_directory": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\a1-0.1.0-games\\runs\\20260910-201459-31e75c",
+  "run_id": "20260910-201459-31e75c",
+  "status": "completed",
+  "limits": {
+    "base_ms": 5000,
+    "increment_ms": 50,
+    "ply_cap": 600,
+    "seed": 20260910,
+    "parallel": 1
+  },
+  "scheduled": 20,
+  "statuses": {
+    "completed": 20
+  },
+  "verified_games": 20,
+  "verified_accepted_plies": 1723,
+  "combined_pgn_verified": false,
+  "source_hashes": {
+    "manifest.json": "1ce3493ebffe6894c79d546a55517b0b1f0c6b7c9839716a208725423c58155c",
+    "games/g00001.json": "d10d99fae7bfa224dbcf7ab92a9da811d3e52b35fa85a70104b80214c55a05d5",
+    "games/g00002.json": "e1337cee2de89ee03cd31694d5b96e877f02cfec2b6c7a638b46ac3755b822f0",
+    "games/g00003.json": "658f7c36e3bbd7e94511f1e2a3a4c3e550a3a6d6390e6caf4e8fe59397431e47",
+    "games/g00004.json": "6b77568de8989c3f27f4cc9b3c206379c0bb05b619a9b5341c231ee83a46eb87",
+    "games/g00005.json": "401987e7c9c203ae58829d9f8a7098910d2f666feeb8a31df8f7b87b6763f026",
+    "games/g00006.json": "a08c285bde2276e183f59acac3f74e66bab45e53bcb7f010738525051e7607d6",
+    "games/g00007.json": "09bbdd316b68c316faef6c4ae05576015a1512634e346877fca272306a836d11",
+    "games/g00008.json": "c01bd0d8859980cdc41ab453b508663e0fda1c13010e98f20f7f35c5ce59afd1",
+    "games/g00009.json": "fd9df896dd10ea148582b1da9d464127f97a84e44cb9d907895373c54fc3ecb9",
+    "games/g00010.json": "72fabef7a173772387f13e1514e1aeae49645c2fd35f3f9421f4cb525b6cf583",
+    "games/g00011.json": "62dba7d4a478adc0363a0957c7c41b17db60ccae73d03c576a5907847761751c",
+    "games/g00012.json": "cb87c6852e7a9da6e1ffa614ccb2bc15b2ed6c56718fd843c79cca758ca2fc83",
+    "games/g00013.json": "b255c322373e1dc1316609fe1d2c991129744e3ad6d27cb2ceb357dd67eef3e5",
+    "games/g00014.json": "cd98c423e8553aea69e164f8c305a22fde2b3dff6795ccfd9a49023d10b62451",
+    "games/g00015.json": "24404e3991574085a470cfac71f76b0d9b39a7b07e5648ec506bff9c89ecb6e1",
+    "games/g00016.json": "d3ec61ee87c1ba800ee78f0708f59cd306cf456f3c06b5c73704cb99a43bd23b",
+    "games/g00017.json": "db27317d086be57572ca5f04c81c3c67f3540da1d979df6b5891a3905ad8892d",
+    "games/g00018.json": "86067129891e7ce38c591d6736852e7af6083cad90df3a3bb9b162ea27daa425",
+    "games/g00019.json": "381015b0db10de43028b7a1a64dc7ae7c6838d0f0316df2ce65a7755629ab866",
+    "games/g00020.json": "a1a6092fef02a5d5316fe75c2922a68074aa6a07d2e196a14d305441ae66ce2b"
+  },
+  "recorded_candidate_build": {
+    "id": "a1-010",
+    "name": "A1 0.1.0 compiled experiment",
+    "family": "Original A1 alpha-beta",
+    "kind": "python",
+    "path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\checkpoints\\a1-0.1.0",
+    "description": "Original compiled board/search, A0 evaluation formulas; experimental checkpoint",
+    "command": [],
+    "options": {},
+    "env": {},
+    "requires": [
+      "numpy",
+      "numba"
+    ],
+    "includes": [
+      "weights"
+    ],
+    "assets": [],
+    "max_move_ms": null,
+    "frozen_path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\a1-0.1.0-games\\runs\\20260910-201459-31e75c\\builds\\a1-010",
+    "files": {
+      "agent.py": "d1e725b41f0f464a5dd5115d26d5466abd52ac91534ca8b3ac2e771fbdce1a46",
+      "a0/__init__.py": "2cd4b94de800a6ede37e12f7802b77b1e555531b691eebfcc8de665a06755439",
+      "a0/engine.py": "6fa1b27f4eef665c2d63bf9179bde51bd3b04ce0f1e4257d819ca084ca898d03",
+      "a0/evaluation.py": "87188241d5d0e8343691081edf391542515f5efd67e356d0942d18c7a086bd7a",
+      "a0/README.md": "47793821761c5eb59389ea566cdb9f11e9fbd1d2f09f2714dace4049db6802a2",
+      "a0/search.py": "950efdac817f159ba6d446aaee80c9239d0b780ed5e1e67bf1c1ce16d4964508",
+      "a1/__init__.py": "25f3f6621aa39db40113be251b4ea7f80e7628f8ec64d2e03659a63f297c7725",
+      "a1/board.py": "b3f5ce28dc12039ec5bc611dcedd35b4c4dcac4b36ead57812c75f2312089700",
+      "a1/engine.py": "06cc4cf403ef59069cac5fbaae33702926f1118dc23fe18e5140411f4c9bdf93",
+      "a1/evaluation.py": "71b0fdeb3fc49956b6b13a35cd5e2625cc59aecc946beb9fa16238c04890131a",
+      "a1/jit.py": "611b9013a029c096714a1ac9ea89323e422975590cafa07f774bb71947cf9b38",
+      "a1/README.md": "46f5498619de0a9a966571bb9ea3dc019ae3350b4f88814896f154db4b4b50a2",
+      "a1/search.py": "49959277c77b0e62be233f9659327d1e9437ddc74539ba4e896fb1d3db233aad"
+    },
+    "sha256": "e724f15ae6d2ac8a863a0cc042dfa8068841faa59e0b8bd51ba5042751b96517"
+  },
+  "logged_versions": {
+    "A1 0.1.0": 765
+  },
+  "original_summary": [
+    {
+      "opponent": "a0-012",
+      "games": 20,
+      "scheduled": 20,
+      "wins": 17,
+      "draws": 2,
+      "losses": 1,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 10,
+      "score": 0.9,
+      "interval": [
+        0.47053059165326244,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 5
+    }
+  ],
+  "corrected_summary": [
+    {
+      "opponent": "a0-012",
+      "games": 20,
+      "scheduled": 20,
+      "wins": 17,
+      "draws": 2,
+      "losses": 1,
+      "candidate_failures": 0,
+      "void": 0,
+      "pairs": 10,
+      "score": 0.9,
+      "interval": [
+        0.47053059165326244,
+        1
+      ],
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 5
+    }
+  ],
+  "nonwins": [
+    {
+      "game": "g00012",
+      "opponent": "a0-012",
+      "opening": "winawer",
+      "candidate_colour": "black",
+      "result": "draw",
+      "termination": "threefold_repetition",
+      "candidate_failed": false,
+      "plies": 197,
+      "final_fen": "k7/8/P7/1K6/3N4/8/8/8 w - - 27 105",
+      "side_to_move": "white",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A1 0.1.0",
+        "move": "a7a8",
+        "depth": 12,
+        "score_cp": 0,
+        "nodes": 3183,
+        "qnodes": 1865,
+        "elapsed_ms": 51.3,
+        "pv": [
+          "a7a8"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 1,
+          "n": 1,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 0,
+          "n": 0,
+          "b": 0,
+          "r": 0,
+          "q": 0,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00015",
+      "opponent": "a0-012",
+      "opening": "reti",
+      "candidate_colour": "white",
+      "result": "black",
+      "termination": "checkmate",
+      "candidate_failed": false,
+      "plies": 60,
+      "final_fen": "8/7p/1p2k1p1/p7/P2p2P1/1P1n4/3r4/RKq5 w - - 0 35",
+      "side_to_move": "white",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A1 0.1.0",
+        "move": "g3g4",
+        "depth": 1,
+        "score_cp": -29998,
+        "nodes": 14,
+        "qnodes": 13,
+        "elapsed_ms": 3.6,
+        "pv": [
+          "g3g4"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 3,
+          "n": 0,
+          "b": 0,
+          "r": 1,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 5,
+          "n": 1,
+          "b": 0,
+          "r": 1,
+          "q": 1,
+          "k": 1
+        }
+      }
+    },
+    {
+      "game": "g00017",
+      "opponent": "a0-012",
+      "opening": "french",
+      "candidate_colour": "white",
+      "result": "draw",
+      "termination": "threefold_repetition",
+      "candidate_failed": false,
+      "plies": 67,
+      "final_fen": "1kr5/pp1R1p2/6p1/2P1p1Pp/1n5P/5B2/8/6K1 b - - 10 39",
+      "side_to_move": "black",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": {
+        "engine": "A1 0.1.0",
+        "move": "d8d7",
+        "depth": 5,
+        "score_cp": 0,
+        "nodes": 23584,
+        "qnodes": 17359,
+        "elapsed_ms": 100.4,
+        "pv": [
+          "d8d7"
+        ]
+      },
+      "material": {
+        "white": {
+          "p": 3,
+          "n": 0,
+          "b": 1,
+          "r": 1,
+          "q": 0,
+          "k": 1
+        },
+        "black": {
+          "p": 6,
+          "n": 1,
+          "b": 0,
+          "r": 1,
+          "q": 0,
+          "k": 1
+        }
+      }
+    }
+  ],
+  "retained_telemetry": {
+    "a0-012": {
+      "rows": 765,
+      "depth_counts": {
+        "3": 334,
+        "4": 281,
+        "2": 36,
+        "1": 22,
+        "5": 45,
+        "6": 30,
+        "7": 15,
+        "12": 2
+      },
+      "median_depth": 3,
+      "quiescence_node_fraction": 0.8849784713230265
+    }
+  },
+  "limitations": [
+    "Interrupted or queued games are unscored; this is not a complete league.",
+    "Log telemetry is truncated and is not an unbiased sample of all moves.",
+    "Replay verifies recorded legal moves/results, not execution or wall-clock accuracy.",
+    "Build hashes identify the declared build; no engine paths or commands were executed."
+  ]
+}

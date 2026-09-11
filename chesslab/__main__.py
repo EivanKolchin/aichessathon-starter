@@ -2,12 +2,14 @@
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 from chesslab import ladder
+from chesslab.builds import install
 from chesslab.compare import compare
 from chesslab.lab import Lab
-from chesslab.registry import ROOT, load_registry, parse, store
+from chesslab.registry import ROOT, identifier, load_registry, parse, store
 from chesslab.runner import run_runner
 from chesslab.server import Server
 
@@ -38,6 +40,36 @@ def run_ladder(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
+def title_from(stem: str) -> str:
+    """Mirror the drop page's name suggestion, so a zip registers under the name it looks like."""
+    words = re.sub(r"[-_]+", " ", stem).strip()
+    return words[:1].upper() + words[1:]
+
+
+def run_register(args: argparse.Namespace) -> None:
+    """A JSON spec names an engine already on disk; a zip is checked and unpacked like a drop."""
+    if args.spec.suffix.lower() != ".zip":
+        spec = parse(json.loads(args.spec.read_text(encoding="utf-8")))
+        store(args.registry, spec)
+        print(f"Registered {spec.name} ({spec.family}): {spec.availability()[1]}")
+        return
+    name = args.name.strip() or title_from(args.spec.stem)
+    engine_id = identifier(name)
+    # The same validation, unpacking and one-move probe the browser drop runs, so a zip that
+    # would not have played is refused here rather than registered and discovered mid-experiment.
+    spec, report = install(
+        args.spec.read_bytes(),
+        args.registry.parent / "agents" / engine_id,
+        engine_id,
+        name,
+        args.family.strip() or name,
+        args.notes.strip() or f"Registered from {args.spec.name}",
+        Lab.probe,
+    )
+    store(args.registry, spec)
+    print(f"Registered {spec.name} ({spec.family}) as {spec.id}: {report}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, default=ROOT / ".chesslab" / "runs")
@@ -47,8 +79,11 @@ def main() -> None:
     serve.add_argument("--port", type=int, default=8765)
     run = sub.add_parser("run", help="Execute a JSON experiment request without a browser")
     run.add_argument("config", type=Path)
-    register = sub.add_parser("register", help="Register a Python directory or external UCI engine")
-    register.add_argument("spec", type=Path)
+    register = sub.add_parser("register", help="Register a JSON engine spec or a submission zip")
+    register.add_argument("spec", type=Path, help="A JSON spec, or a .zip holding agent.py")
+    register.add_argument("--name", default="", help="Name for a zip; defaults to its filename")
+    register.add_argument("--family", default="", help="Family for a zip; defaults to its name")
+    register.add_argument("--notes", default="", help="Description for a zip")
     sub.add_parser("catalog", help="List opponent availability")
     comparison = sub.add_parser("compare", help="Compare matched pairs in two finished manifests")
     comparison.add_argument("baseline", type=Path)
@@ -102,9 +137,10 @@ def main() -> None:
             raise SystemExit(str(error)) from error
         return
     if args.action == "register":
-        spec = parse(json.loads(args.spec.read_text(encoding="utf-8")))
-        store(args.registry, spec)
-        print(f"Registered {spec.name} ({spec.family}): {spec.availability()[1]}")
+        try:
+            run_register(args)
+        except (ValueError, OSError) as error:
+            raise SystemExit(str(error)) from error
         return
     if args.action == "catalog":
         for spec in load_registry(args.registry).values():

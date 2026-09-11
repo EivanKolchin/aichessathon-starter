@@ -1,0 +1,144 @@
+{
+  "schema": 1,
+  "source_directory": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\hybrid-pilot-games\\runs\\20260911-002252-40905b",
+  "run_id": "20260911-002252-40905b",
+  "status": "interrupted",
+  "limits": {
+    "base_ms": 5000,
+    "increment_ms": 50,
+    "ply_cap": 600,
+    "seed": 20260911,
+    "parallel": 1
+  },
+  "scheduled": 4,
+  "statuses": {
+    "completed": 1,
+    "interrupted": 1,
+    "queued": 2
+  },
+  "verified_games": 1,
+  "verified_accepted_plies": 0,
+  "combined_pgn_verified": false,
+  "source_hashes": {
+    "manifest.json": "84e865e8733c112389ccc6573c9fb589cd5476801dd401e0e612635b9c5a63d2",
+    "games/g00001.json": "9c74accf12b94cf4c698a574981c0dd8970d635363dd88bdf83cdbe3eb7224b8"
+  },
+  "recorded_candidate_build": {
+    "id": "a1-hybrid-pilot",
+    "name": "A1 neural pilot \u00b7 experimental",
+    "family": "Original A1 alpha-beta + residual NN",
+    "kind": "python",
+    "path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\checkpoints\\a1-hybrid-pilot",
+    "description": "Original 768-32-1 network trained from scratch; test-family loss regressed, not promoted",
+    "command": [],
+    "options": {},
+    "env": {},
+    "requires": [
+      "numpy",
+      "numba"
+    ],
+    "includes": [
+      "weights"
+    ],
+    "assets": [],
+    "max_move_ms": null,
+    "max_nodes": null,
+    "frozen_path": "C:\\Users\\eivan\\Desktop\\Game\\aichessathon-starter\\.chesslab\\studies\\hybrid-pilot-games\\runs\\20260911-002252-40905b\\builds\\a1-hybrid-pilot",
+    "files": {
+      "agent.py": "fb08cc59575bcfb9200fa0aed6d0e83253de7b8553c034da4c5f557464d3c296",
+      "a0/__init__.py": "2cd4b94de800a6ede37e12f7802b77b1e555531b691eebfcc8de665a06755439",
+      "a0/engine.py": "6fa1b27f4eef665c2d63bf9179bde51bd3b04ce0f1e4257d819ca084ca898d03",
+      "a0/evaluation.py": "87188241d5d0e8343691081edf391542515f5efd67e356d0942d18c7a086bd7a",
+      "a0/README.md": "47793821761c5eb59389ea566cdb9f11e9fbd1d2f09f2714dace4049db6802a2",
+      "a0/search.py": "950efdac817f159ba6d446aaee80c9239d0b780ed5e1e67bf1c1ce16d4964508",
+      "a1/__init__.py": "2df5fa464ceac27dd3a54f24f04fc5e587e7f2c5a2ca061532bee4e5ebfde315",
+      "a1/board.py": "5e5cb69361dcb6711eaa0490fad3325ebd40f427f6b5ec80dd5f5f7b03ae802f",
+      "a1/engine.py": "ec82cadc57414ae9a5ebfd38fb1159640043aef03d0f8ff3ede1a32241bf3bf3",
+      "a1/evaluation.py": "71b0fdeb3fc49956b6b13a35cd5e2625cc59aecc946beb9fa16238c04890131a",
+      "a1/jit.py": "611b9013a029c096714a1ac9ea89323e422975590cafa07f774bb71947cf9b38",
+      "a1/neural.py": "961da8c39a01807a8ef10a4f129d4f556412c8e00269ae1dffe3ee540c701f6f",
+      "a1/README.md": "6554de4ec871e75c388ae2f744283bb8c689f276be27a2ad58daba8d7c339f4a",
+      "a1/runtime.py": "38230d63e2e803ee110b93ca5fffe5ad5e6a386b53e7fbbccc9500a77be91b76",
+      "a1/search.py": "39f93a6c0964782728849badf5e401a878ce866f2485e11c8c5b682a3a12e459",
+      "weights/model.npz": "f26ba9508d377504408dbf1f31eaf33280de257a5aab8561871366eaaa2ae0f0",
+      "weights/training.json": "253af154bbed92f6e46e287c52c2e54d128b13ad4c13a4d07abd05da77e8c994"
+    },
+    "sha256": "daf09a938c6f7ad0aa7b1f9f550a5489b3aea8205b189574496f5aef33e20395"
+  },
+  "logged_versions": {},
+  "original_summary": [
+    {
+      "opponent": "a1-021",
+      "games": 0,
+      "scheduled": 4,
+      "wins": 0,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 1,
+      "void": 1,
+      "pairs": 0,
+      "score": null,
+      "interval": null,
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 0
+    }
+  ],
+  "corrected_summary": [
+    {
+      "opponent": "a1-021",
+      "games": 0,
+      "scheduled": 4,
+      "wins": 0,
+      "draws": 0,
+      "losses": 0,
+      "candidate_failures": 1,
+      "void": 1,
+      "pairs": 0,
+      "score": null,
+      "interval": null,
+      "interval_method": "95% Hoeffding bound over complete opening pairs (exploratory)",
+      "families": 0
+    }
+  ],
+  "nonwins": [
+    {
+      "game": "g00001",
+      "opponent": "a1-021",
+      "opening": "english",
+      "candidate_colour": "white",
+      "result": "void",
+      "termination": "both_failed",
+      "candidate_failed": true,
+      "plies": 0,
+      "final_fen": "r1bqk1nr/pp1pppbp/2n3p1/2p5/2P5/2N3P1/PP1PPPBP/R1BQK1NR w KQkq - 2 5",
+      "side_to_move": "white",
+      "remaining_before_rejected_move_ms": null,
+      "last_retained_search": null,
+      "material": {
+        "white": {
+          "p": 8,
+          "n": 2,
+          "b": 2,
+          "r": 2,
+          "q": 1,
+          "k": 1
+        },
+        "black": {
+          "p": 8,
+          "n": 2,
+          "b": 2,
+          "r": 2,
+          "q": 1,
+          "k": 1
+        }
+      }
+    }
+  ],
+  "retained_telemetry": {},
+  "limitations": [
+    "Interrupted or queued games are unscored; this is not a complete league.",
+    "Log telemetry is truncated and is not an unbiased sample of all moves.",
+    "Replay verifies recorded legal moves/results, not execution or wall-clock accuracy.",
+    "Build hashes identify the declared build; no engine paths or commands were executed."
+  ]
+}

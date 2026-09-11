@@ -168,8 +168,8 @@ def unmake_null(state: IntArray, undo: IntArray) -> None:
 def has_material(board: IntArray, side: int) -> bool:
     """Whether this side has a piece other than pawns and its king.
 
-    A null move is unsound in zugzwang, and zugzwang needs a side with nothing safe to move.
-    Requiring a real piece is the standard, cheap guard against it.
+    This excludes pawn-only zugzwangs. Positions with pieces can also be zugzwang;
+    the guard reduces risk but does not make null-move pruning sound.
     """
     for square in range(120):
         if square & 0x88:

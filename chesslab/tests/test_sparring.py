@@ -1,3 +1,4 @@
+import argparse
 import io
 import tempfile
 import time
@@ -10,11 +11,13 @@ from typing import Any
 import chess
 
 from chesslab import builds
+from chesslab.__main__ import run_register
 from chesslab.lab import Lab
-from chesslab.registry import EngineSpec, write_json
+from chesslab.registry import EngineSpec, custom_engines, write_json
 from chesslab.sparring import adjudicate
 from harness.referee import FAILED_TERMINATIONS
 
+BREAK = chr(10)
 MATE_IN_ONE = "6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1"
 STALEMATE_IN_ONE = "7k/8/8/8/8/8/5Q2/K7 w - - 0 1"
 NEWCOMER = '''import chess
@@ -425,6 +428,85 @@ class AdoptionTests(unittest.TestCase):
         for name in ("", "   ", "!!!"):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 self.drop(name=name)
+
+class RegisterCommandTests(unittest.TestCase):
+    """`chesslab register` on a zip. A submission is the artefact people have; it should work."""
+
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.directory = Path(self.temporary.name)
+        self.registry = self.directory / "engines.json"
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def zip_at(self, stem: str, files: dict[str, bytes | str] | None = None) -> Path:
+        path = self.directory / f"{stem}.zip"
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+            for name, body in ({"agent.py": NEWCOMER} if files is None else files).items():
+                archive.writestr(name, body)
+        return path
+
+    def register(self, path: Path, **fields: str) -> None:
+        request = {"name": "", "family": "", "notes": ""}
+        request.update(fields)
+        run_register(argparse.Namespace(spec=path, registry=self.registry, **request))
+
+    def stored(self) -> list[dict[str, Any]]:
+        return custom_engines(self.registry)
+
+    def test_a_submission_zip_is_unpacked_and_registered(self) -> None:
+        self.register(self.zip_at("submission"), name="A1 0.2.2", family="Original A1")
+        (engine,) = self.stored()
+        self.assertEqual(engine["id"], "a1-0-2-2")
+        self.assertEqual(engine["name"], "A1 0.2.2")
+        self.assertEqual(engine["family"], "Original A1")
+        self.assertEqual(engine["requires"], ["chess"])
+        unpacked = self.registry.parent / "agents" / "a1-0-2-2"
+        self.assertTrue((unpacked / "agent.py").is_file())
+
+    def test_the_filename_names_it_when_no_name_is_given(self) -> None:
+        self.register(self.zip_at("my_new-agent"))
+        (engine,) = self.stored()
+        self.assertEqual(engine["name"], "My new agent")
+        self.assertEqual(engine["id"], "my-new-agent")
+
+    def test_packages_and_data_files_in_the_zip_are_declared(self) -> None:
+        self.register(
+            self.zip_at(
+                "layered",
+                {"agent.py": "from pack.brain import get_move as get_move" + BREAK,
+                 "pack/brain.py": NEWCOMER,
+                 "pack/__init__.py": "", "weights/w.npy": b"weights"},
+            )
+        )
+        (engine,) = self.stored()
+        self.assertEqual(engine["includes"], ["pack", "weights"])
+        self.assertEqual(engine["requires"], ["chess"])
+
+    def test_a_json_spec_still_registers_an_engine_already_on_disk(self) -> None:
+        agent = self.directory / "on-disk"
+        agent.mkdir()
+        (agent / "agent.py").write_text(NEWCOMER, encoding="utf-8")
+        spec = self.directory / "engine.json"
+        write_json(spec, {"id": "on-disk", "name": "On disk", "family": "Bench",
+                          "path": agent.as_posix()})
+        self.register(spec)
+        self.assertEqual([engine["id"] for engine in self.stored()], ["on-disk"])
+
+    def test_a_zip_the_platform_would_refuse_registers_nothing(self) -> None:
+        cases: dict[str, dict[str, bytes | str]] = {
+            "no agent.py": {"engine.py": NEWCOMER},
+            "nested in a folder": {"wrapper/agent.py": NEWCOMER},
+            "a native binary": {"agent.py": NEWCOMER, "fast.pyd": b"MZ binary"},
+            "raises on import": {"agent.py": 'raise RuntimeError("boom")' + BREAK},
+        }
+        for label, files in cases.items():
+            with self.subTest(label), self.assertRaises(ValueError):
+                self.register(self.zip_at("refused", files))
+            self.assertEqual(self.stored(), [])
+            self.assertFalse((self.registry.parent / "agents" / "refused").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

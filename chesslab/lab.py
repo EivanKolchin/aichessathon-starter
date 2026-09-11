@@ -20,7 +20,7 @@ from typing import Any
 
 import chess
 
-from chesslab.builds import build_spec, extract
+from chesslab.builds import install
 from chesslab.locking import WorkspaceLock
 from chesslab.openings import Opening, catalog
 from chesslab.players import Trace, make_player, replay
@@ -212,16 +212,15 @@ class Lab:
                 raise ValueError("An experiment is running; add agents once it finishes")
             if self.sparring is not None and self.sparring.spec.id == engine_id:
                 raise ValueError("An engine with that name is in the middle of a game")
-        directory = self.agents_dir / engine_id
-        extract(payload, directory)
-        try:
-            spec = build_spec(
-                directory, engine_id, name, family, note or "Dropped into the lab"
-            )
-            report = self.probe(spec)
-        except BaseException:
-            shutil.rmtree(directory, ignore_errors=True)
-            raise
+        spec, report = install(
+            payload,
+            self.agents_dir / engine_id,
+            engine_id,
+            name,
+            family,
+            note or "Dropped into the lab",
+            self.probe,
+        )
         with self.lock:
             store(self.registry_path, spec)
         return {"catalog": self.catalog(), "engine": spec.data(), "report": report}

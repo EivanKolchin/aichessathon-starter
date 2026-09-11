@@ -1,0 +1,8 @@
+{
+  "id": "a1-022",
+  "name": "A1 0.2.2 classical control",
+  "family": "Original A1 alpha-beta",
+  "path": ".chesslab/checkpoints/a1-0.2.2",
+  "requires": ["numpy", "numba"],
+  "description": "Full position checks, isolated null history and LLVM O1 startup policy"
+}

@@ -1,13 +1,13 @@
 """Original compiled iterative deepening, PVS and bounded quiescence.
 
-Reuses A0's evaluation and search limits. Transposition storage supplies both move ordering and
-score bounds. A stored bound is only reused when the draw context matches, because whether a
-position is a draw depends on the halfmove clock and on which positions the path has already
-visited; move hints carry no such claim and are shared on position alone. Repetition comparisons
-use exact packed identities, not hash equality.
+Uses A0's evaluation by default, with an injectable compiled evaluator for neural experiments.
+Transposition storage supplies move ordering and score bounds after exact position and clock
+checks. Optional path fingerprints further restrict reuse; graph-history interaction remains
+approximate. Repetition comparisons use exact packed identities, not hash equality.
 """
 
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import chess
@@ -40,9 +40,13 @@ from a1.evaluation import evaluate
 from a1.jit import compiled
 
 type FloatArray = NDArray[np.float64]
-NODES, QNODES, STOP, NODE_LIMIT, CLOCK_MASK, ROOT_MOVE, CONTEXT, TTHITS = range(8)
+type Evaluator = Callable[[IntArray, IntArray], int]
+NODES, QNODES, STOP, NODE_LIMIT, CLOCK_MASK, ROOT_MOVE, CONTEXT, TTHITS, NULL_ACTIVE = range(9)
+CONTROL_SIZE = 9
 # Transposition columns. BOUND is 0 when the slot holds a move hint but no usable score.
 KEY, MOVE, TAG, SCORE, DEPTH, BOUND = range(6)
+IDENTITY = 6
+TT_COLUMNS = 12
 LOWER, UPPER, EXACT = 1, 2, 3
 HALF_TAG = 0x9E3779B97F4A7C15
 VALUES = np.array((0, 100, 315, 330, 505, 950, 0), dtype=np.int64)
@@ -60,8 +64,9 @@ class SearchConfig:
     use_null: bool = True
     use_lmr: bool = True
     # Strict conditions a stored bound on the whole path, the way A0 does. Measured over six
-    # positions it reused almost nothing - a transposition reached by a different move order
-    # never matches a path-summed fingerprint - so it is kept as an ablation rather than the
+    # positions it reused almost nothing: different move orders usually visit different
+    # intermediate positions. The sum fingerprints a multiset, not the order itself. This
+    # remains a probabilistic context check, so it is kept as an ablation rather than the
     # default. Relaxed conditions on the halfmove clock alone and relies on the repetition and
     # fifty-move tests this node already ran before probing. That is the ordinary engine
     # approximation to graph history interaction: a bound can still come from a subtree whose
@@ -148,6 +153,15 @@ def hint_key(key: IntArray) -> int:
 
 
 @compiled
+def matches_position(table: IntArray, slot: int, position: IntArray) -> bool:
+    """A hash selects a slot; only the complete identity authorises score reuse."""
+    for word in range(6):  # noqa: SIM110 - Numba kernel, no generator closure
+        if table[slot, IDENTITY + word] != position[word]:
+            return False
+    return True
+
+
+@compiled
 def ordered(
     board: IntArray,
     state: IntArray,
@@ -205,6 +219,7 @@ def negamax(
     control: IntArray,
     deadline: FloatArray,
     flags: IntArray,
+    evaluator: Evaluator = evaluate,
 ) -> int:
     control[NODES] += 1
     quiescent = depth <= 0
@@ -218,19 +233,18 @@ def negamax(
     checked = in_check(board, state)
     if count == 0:
         return -MATE + ply if checked else 0
-    if (
-        state[HALF] >= 100
-        or repeated(positions, root_index + ply, state[HALF])
-        or insufficient(board)
+    if insufficient(board) or (
+        not control[NULL_ACTIVE]
+        and (state[HALF] >= 100 or repeated(positions, root_index + ply, state[HALF]))
     ):
         return 0
     if ply >= MAX_PLY - 1:
-        return evaluate(board, state)
+        return evaluator(board, state)
     if quiescent:
         if not flags[0]:
-            return evaluate(board, state)
+            return evaluator(board, state)
         if not checked:
-            stand = evaluate(board, state)
+            stand = evaluator(board, state)
             if stand >= beta:
                 return stand
             alpha = max(alpha, stand)
@@ -252,14 +266,16 @@ def negamax(
     hint = 0
     if not quiescent and flags[2] and hints[slot, KEY] == key:
         hint = hints[slot, MOVE]
-        # A bound is only what this position was worth on a path with the same draw prospects,
-        # and never at the root, where the caller still needs the move this node chooses.
+        # The optional context tag reduces graph-history ambiguity; it does not prove identical
+        # draw prospects. Never reuse scores at the root, where the caller needs an actual move.
         if (
             ply > 0
             and flags[3]
+            and not control[NULL_ACTIVE]
             and hints[slot, BOUND]
             and hints[slot, TAG] == tag
             and hints[slot, DEPTH] >= depth
+            and matches_position(hints, slot, positions[root_index + ply])
         ):
             value = unpack_mate(hints[slot, SCORE], ply)
             bound = hints[slot, BOUND]
@@ -276,21 +292,24 @@ def negamax(
     # Null-move pruning. If passing the move still leaves the opponent unable to reach beta,
     # the real move almost certainly beats beta too, so the subtree is not worth searching.
     #
-    # A null position is written into the repetition history like any other, and cannot create
-    # a false repetition: the scan from the child inspects positions an odd number of real
-    # plies away, and no odd number of real moves returns to the same placement. It can still
-    # miss a genuine repetition inside the null subtree, which errs toward not pruning.
+    # A pass is not legal history. Triangulation can return the same placement after an odd
+    # number of real plies; another pass can even undo the first. Inside the synthetic subtree
+    # disable further passes, history-based draws and TT score reads/writes. Intrinsic terminal
+    # positions still count. Null pruning remains a heuristic, including in piece zugzwangs.
     if (
         flags[5]
+        and not control[NULL_ACTIVE]
         and not quiescent
         and ply > 0
         and depth >= 3
         and not checked
-        and beta < MATE_BOUND
+        and -MATE_BOUND < beta < MATE_BOUND
+        and beta == alpha + 1
         and has_material(board, state[TURN])
     ):
         reduction = 2 + depth // 6
         make_null(state, undos[ply])
+        control[NULL_ACTIVE] = 1
         identity(board, state, positions[root_index + ply + 1])
         control[CONTEXT] += mix(positions[root_index + ply + 1])
         score = -negamax(
@@ -312,7 +331,9 @@ def negamax(
             control,
             deadline,
             flags,
+            evaluator,
         )
+        control[NULL_ACTIVE] = 0
         control[CONTEXT] -= mix(positions[root_index + ply + 1])
         unmake_null(state, undos[ply])
         if control[STOP]:
@@ -320,8 +341,6 @@ def negamax(
         # A mate found behind a pass is not a mate anyone can force; report the bound instead.
         if score >= beta:
             return beta if score >= MATE_BOUND else score
-        # The null search overwrote this ply's move list.
-        count = generate(board, state, moves[ply], undos[ply])
 
     ordered(board, state, moves[ply], scores[ply], count, hint, killers, history, ply)
     original_alpha = alpha
@@ -342,8 +361,9 @@ def negamax(
 
         # Late move reductions. Ordering already put the moves worth searching first, so the
         # ones left over are searched shallower on the assumption they will not beat alpha.
-        # When one does, it is searched again at full depth, so this costs accuracy only
-        # where the assumption held. Checks, captures, promotions and evasions keep full depth.
+        # When one does, it is searched again at full depth. A move whose shallow search
+        # misses its value may still be wrongly reduced: this is a heuristic, not a proof.
+        # Checks, captures, promotions and evasions keep full depth.
         reduction = 0
         if (
             flags[6]
@@ -380,6 +400,7 @@ def negamax(
                 control,
                 deadline,
                 flags,
+                evaluator,
             )
             # A reduced move that beat alpha was not the kind of move the reduction assumed.
             if not control[STOP] and reduction and score > alpha:
@@ -402,6 +423,7 @@ def negamax(
                     control,
                     deadline,
                     flags,
+                    evaluator,
                 )
             if not control[STOP] and alpha < score < beta:
                 score = -negamax(
@@ -423,6 +445,7 @@ def negamax(
                     control,
                     deadline,
                     flags,
+                    evaluator,
                 )
         else:
             score = -negamax(
@@ -444,6 +467,7 @@ def negamax(
                 control,
                 deadline,
                 flags,
+                evaluator,
             )
         unmake(board, state, move, undos[ply])
         control[CONTEXT] -= mix(positions[root_index + ply + 1])
@@ -462,7 +486,7 @@ def negamax(
                 )
             break
     if not quiescent and best_move:
-        if flags[2]:
+        if flags[2] and not control[NULL_ACTIVE]:
             hints[slot, KEY], hints[slot, MOVE] = key, best_move
             hints[slot, TAG] = tag
             hints[slot, SCORE] = pack_mate(best, ply)
@@ -470,14 +494,18 @@ def negamax(
             hints[slot, BOUND] = (
                 UPPER if best <= original_alpha else LOWER if best >= beta else EXACT
             )
+            for word in range(6):
+                hints[slot, IDENTITY + word] = positions[root_index + ply, word]
         if ply == 0:
             control[ROOT_MOVE] = best_move
     return alpha if quiescent else best
 
 
 class Search:
-    def __init__(self, config: SearchConfig | None = None) -> None:
+    def __init__(self, config: SearchConfig | None = None, evaluator: Evaluator = evaluate) -> None:
         self.config = config or SearchConfig()
+        # Compiled callable fixed for this search instance; changing it needs a fresh TT.
+        self.evaluator = evaluator
         if not 1 <= self.config.max_depth < MAX_PLY or self.config.max_nodes < 0:
             raise ValueError("Invalid compiled search limits")
         self.moves = np.zeros((MAX_PLY, MAX_MOVES), dtype=np.int64)
@@ -485,7 +513,7 @@ class Search:
         self.undos = np.zeros((MAX_PLY, UNDO_SIZE), dtype=np.int64)
         self.killers = np.zeros((MAX_PLY, 2), dtype=np.int64)
         self.history = np.zeros((2, 128, 128), dtype=np.int64)
-        self.hints = np.zeros((32768, 6), dtype=np.int64)
+        self.hints = np.zeros((32768, TT_COLUMNS), dtype=np.int64)
         self.flags = np.array(
             [
                 self.config.quiescence,
@@ -539,11 +567,11 @@ class Search:
             self.history,
             0,
         )
-        best, score, completed = int(self.moves[0, 0]), evaluate(board, state), 0
+        best, score, completed = int(self.moves[0, 0]), self.evaluator(board, state), 0
         # The reversible history the search inherits is already part of its draw context.
         seed = context_seed(positions, root_index + 1)
         control = np.array(
-            [0, 0, 0, self.config.max_nodes, 0 if hard_ms < 20 else 31, best, seed, 0],
+            [0, 0, 0, self.config.max_nodes, 0 if hard_ms < 20 else 31, best, seed, 0, 0],
             dtype=np.int64,
         )
         for depth in range(1, self.config.max_depth + 1):
@@ -577,6 +605,7 @@ class Search:
                     control,
                     deadline,
                     self.flags,
+                    self.evaluator,
                 )
                 if control[STOP] or low < current < high or window >= INFINITY:
                     break

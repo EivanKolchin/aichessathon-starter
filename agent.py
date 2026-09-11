@@ -1,8 +1,9 @@
 """The submission entrypoint. The platform imports this file and calls get_move."""
 
-from a0.engine import ChessAgent
+from a1.engine import ChessAgent
 
-# Original A0 search/evaluation; the permitted chess library supplies legal moves.
+# Original A1 compiled search; the permitted chess library supplies legal moves and FEN parsing.
+# Numba compiles every production signature during this import, inside the platform's init budget.
 # This instance preserves board history and transposition storage within one game.
 AGENT = ChessAgent()
 
