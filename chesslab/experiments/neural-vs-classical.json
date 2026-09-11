@@ -1,0 +1,15 @@
+{
+  "label": "Neural residual vs frozen classical, equal clock",
+  "candidate": "a1-neural",
+  "opponents": ["a1-control"],
+  "openings": [
+    "italian", "scotch", "ruy", "najdorf", "dragon",
+    "french", "winawer", "qgd", "slav", "english",
+    "reti", "closed", "petroff", "alapin", "tarrasch"
+  ],
+  "base_ms": 10000,
+  "increment_ms": 100,
+  "ply_cap": 600,
+  "seed": 20260911,
+  "parallel": 2
+}

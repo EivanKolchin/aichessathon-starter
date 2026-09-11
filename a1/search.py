@@ -65,6 +65,8 @@ class SearchConfig:
     use_tt: bool = True
     use_null: bool = True
     use_lmr: bool = True
+    # Ablation for the history scheme: False restores the bonus-only clamped table.
+    use_history_malus: bool = True
     # Strict conditions a stored bound on the whole path, the way A0 does. Measured over six
     # positions it reused almost nothing: different move orders usually visit different
     # intermediate positions. The sum fingerprints a multiset, not the order itself. This
@@ -507,6 +509,11 @@ def negamax(
                 # Gravity replaces the old clamp: an entry moves a fraction of the way toward
                 # the bound rather than adding until it sticks there, so a move that stops
                 # working decays instead of holding the ceiling for the rest of the game.
+                if not flags[7]:
+                    history[color, source, target] = min(
+                        30_000, history[color, source, target] + depth * depth
+                    )
+                    break
                 bonus = min(190 * depth - 108, 1596)
                 malus = min(736 * depth - 268, 2044)
                 entry = history[color, source, target]
@@ -562,6 +569,7 @@ class Search:
                 self.config.strict_draw_context,
                 self.config.use_null,
                 self.config.use_lmr,
+                self.config.use_history_malus,
             ],
             dtype=np.int64,
         )
