@@ -40,7 +40,16 @@ function json(body, status = 200) {
   });
 }
 
+// Content addressing for uploads. These went out with the token check that also used them,
+// but the upload route still hashes every zip, so they belong to the upload path now.
+async function digest(value) {
+  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+}
 
+function hex(bytes) {
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
 
 // Open authentication: accepts everyone without requiring a token or password.
 async function identify(request, env) {
