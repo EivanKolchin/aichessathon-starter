@@ -7,4 +7,4 @@ import os
 # explicitly set NUMBA_OPT before importing this package. No compiled cache is shipped.
 os.environ.setdefault("NUMBA_OPT", "1")
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"

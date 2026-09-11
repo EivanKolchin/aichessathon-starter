@@ -1,6 +1,7 @@
 """Independent dense inference, colour symmetry and training/search integration checks."""
 
 import json
+import math
 import random
 import tempfile
 import unittest
@@ -15,6 +16,9 @@ from a1.neural import INPUTS, Weights, create_evaluator, features, load_weights,
 from a1.search import Search, SearchConfig
 from chesslab.experiments.train_neural import fit, train
 from chesslab.tests.test_a1 import SPECIAL_FENS
+
+# A warm-up analyse must outlast the compile it exists to trigger, so it gets no deadline.
+UNTIMED_MS = math.inf
 
 
 class NeuralTests(unittest.TestCase):
@@ -63,10 +67,19 @@ class NeuralTests(unittest.TestCase):
 
     def test_zero_residual_preserves_search_and_input(self) -> None:
         weights = Weights(np.zeros((INPUTS, 4)), np.zeros(4), np.zeros(4), np.zeros(1))
+        evaluator = create_evaluator(weights)
         config = SearchConfig(max_depth=3, aspiration=False)
         board = chess.Board()
+        # Each evaluator is a distinct compiled signature, and the first negamax call for one
+        # compiles the whole search inside whatever deadline it was given. On a loaded host that
+        # outlasts the budgets below and stops the search at its first node, so compile both
+        # signatures untimed here and let the measured searches run warm.
+        for warm in (Search(config), Search(config, evaluator)):
+            warm.analyse(board, UNTIMED_MS, UNTIMED_MS)
         plain = Search(config).analyse(board, 60000, 60000)
-        hybrid = Search(config, create_evaluator(weights)).analyse(board, 60000, 60000)
+        hybrid = Search(config, evaluator).analyse(board, 60000, 60000)
+        self.assertFalse(plain.stopped, "plain search hit its deadline")
+        self.assertFalse(hybrid.stopped, "hybrid search hit its deadline")
         self.assertEqual(
             (plain.move, plain.score, plain.nodes), (hybrid.move, hybrid.score, hybrid.nodes)
         )

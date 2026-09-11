@@ -42,6 +42,8 @@ from a1.jit import compiled
 type FloatArray = NDArray[np.float64]
 type Evaluator = Callable[[IntArray, IntArray], int]
 NODES, QNODES, STOP, NODE_LIMIT, CLOCK_MASK, ROOT_MOVE, CONTEXT, TTHITS, NULL_ACTIVE = range(9)
+# History entries settle around this magnitude instead of climbing to a clamp.
+GRAVITY = 7183
 CONTROL_SIZE = 9
 # Transposition columns. BOUND is 0 when the slot holds a move hint but no usable score.
 KEY, MOVE, TAG, SCORE, DEPTH, BOUND = range(6)
@@ -146,10 +148,22 @@ def unpack_mate(score: int, ply: int) -> int:
 
 @compiled
 def hint_key(key: IntArray) -> int:
+    """Fold the six identity words into one key whose low bits index the table.
+
+    The previous fold XORed each word with a small right shift of itself, which left the low
+    bits barely mixed: sibling positions collided in the 15-bit slot about 90 times more often
+    than a uniform index would, measured over the legal children of eight varied positions.
+    Full identity is still checked before any reuse, so that was never a correctness fault -
+    it was nearby positions evicting each other from the slots the search was about to reread.
+    A splitmix64 finaliser carries every input bit into every output bit and measured zero
+    sibling collisions on the same sample.
+    """
     result = key[5]
     for index in range(5):
-        result ^= key[index] ^ (key[index] >> (index + 1))
-    return int(result ^ (result >> 23) ^ (result >> 41))
+        result ^= key[index] + 0x9E3779B97F4A7C15 + (result << 6) + (result >> 2)
+    result = (result ^ (result >> 30)) * 0xBF58476D1CE4E5B9
+    result = (result ^ (result >> 27)) * 0x94D049BB133111EB
+    return int(result ^ (result >> 31))
 
 
 @compiled
@@ -289,6 +303,11 @@ def negamax(
     if ply == 0:
         hint = control[ROOT_MOVE]
 
+    # Loop invariant, and hoisted above the null-move pass so that call site can pass it too.
+    # A bare 0 there types as Literal[int](0), which specialises this recursive function a
+    # second time and doubles the import; that overran the platform's 90 second init budget.
+    child_qply = qply + 1 if quiescent else 0
+
     # Null-move pruning. If passing the move still leaves the opponent unable to reach beta,
     # the real move almost certainly beats beta too, so the subtree is not worth searching.
     #
@@ -319,7 +338,7 @@ def negamax(
             -beta,
             -beta + 1,
             ply + 1,
-            0,
+            child_qply,
             root_index,
             moves,
             scores,
@@ -357,7 +376,6 @@ def negamax(
         identity(board, state, positions[root_index + ply + 1])
         control[CONTEXT] += mix(positions[root_index + ply + 1])
         child_depth = depth - 1 if depth > 0 else 0
-        child_qply = qply + 1 if quiescent else 0
 
         # Late move reductions. Ordering already put the moves worth searching first, so the
         # ones left over are searched shallower on the assumption they will not beat alpha.
@@ -481,9 +499,30 @@ def negamax(
                 if move != killers[ply, 0]:
                     killers[ply, 1], killers[ply, 0] = killers[ply, 0], move
                 color = 0 if state[TURN] == 1 else 1
-                history[color, source, target] = min(
-                    30_000, history[color, source, target] + depth * depth
-                )
+                # A cutoff says this quiet move was good AND that every quiet tried before it
+                # was not. Recording only the first half leaves the failures indistinguishable
+                # from the untried. The malus is larger than the bonus because failures are
+                # far more numerous.
+                #
+                # Gravity replaces the old clamp: an entry moves a fraction of the way toward
+                # the bound rather than adding until it sticks there, so a move that stops
+                # working decays instead of holding the ceiling for the rest of the game.
+                bonus = min(190 * depth - 108, 1596)
+                malus = min(736 * depth - 268, 2044)
+                entry = history[color, source, target]
+                history[color, source, target] = entry + bonus - entry * bonus // GRAVITY
+                # The board is back at this node, so quietness is re-derived, not remembered.
+                for j in range(i):
+                    other = moves[ply, j]
+                    other_from, other_to = other & 127, (other >> 7) & 127
+                    if board[other_to] or other >> 14:
+                        continue
+                    if abs(board[other_from]) == 1 and other_to == state[EP]:
+                        continue
+                    prior = history[color, other_from, other_to]
+                    history[color, other_from, other_to] = (
+                        prior - malus - prior * malus // GRAVITY
+                    )
             break
     if not quiescent and best_move:
         if flags[2] and not control[NULL_ACTIVE]:

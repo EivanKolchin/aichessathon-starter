@@ -7,10 +7,11 @@ arrays and preallocated undo rows. python-chess is used only at the boundary.
 
 import chess
 import numpy as np
+from numba import boolean, int64, void
 from numpy.typing import NDArray
 
 from a0.evaluation import EG_TABLE, MG_TABLE, PHASE_VALUE
-from a1.jit import compiled
+from a1.jit import compiled, pinned
 
 type IntArray = NDArray[np.int64]
 TURN, RIGHTS, EP, HALF, FULL, WK, BK, MG, EG, PHASE = range(10)
@@ -41,7 +42,8 @@ def decode(move: int) -> chess.Move:
     )
 
 
-@compiled
+# Called with a literal 0 piece from make() and with a variable from from_board().
+@pinned(void(int64[::1], int64[::1], int64, int64))
 def replace(board: IntArray, state: IntArray, square: int, piece: int) -> None:
     """Update a square, incremental evaluation and an exact packed board identity."""
     index = (square // 16) * 8 + square % 16
@@ -194,7 +196,9 @@ def unmake(board: IntArray, state: IntArray, move: int, undo: IntArray) -> None:
         state[i] = undo[i]
 
 
-@compiled
+# generate() reaches this with constant and variable promotion flags and counts, which
+# Numba was compiling as four separate functions.
+@pinned(int64(int64[::1], int64, int64, int64, boolean))
 def append_move(moves: IntArray, count: int, source: int, target: int, promotion: bool) -> int:
     if count + (4 if promotion else 1) > len(moves):
         raise ValueError("Move buffer capacity exceeded")

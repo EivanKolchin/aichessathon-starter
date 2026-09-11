@@ -11,3 +11,13 @@ ladder/node_modules/
 ladder/.wrangler/
 .wrangler/
 .dev.vars
+
+# Internal plans, research, and assistant files
+.claude/
+CLAUDE.md
+docs/
+*plan*.md
+*roadmap*.md
+*handoff*.md
+*research*.md
+*notes*.md
